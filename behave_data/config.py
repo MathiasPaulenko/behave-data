@@ -135,3 +135,41 @@ class Config:
             return cls.from_dict(data)
 
         return cls()
+
+    @classmethod
+    def from_userdata(cls, userdata: dict[str, str]) -> Config:
+        """Create a Config from Behave's ``[userdata]`` dict (from ``behave.ini``).
+
+        Flat string values are parsed:
+        - ``null_markers``: comma-separated string
+        - ``null_markers_by_column``, ``db_connections``, ``type_overrides``: JSON string
+        - ``secret_backend``, ``secret_path``, ``load_base_dir``: string directly
+
+        Only keys present in *userdata* are used; defaults fill the rest.
+
+        Args:
+            userdata: A dict of string key-value pairs, typically from
+                ``context.config.userdata``.
+
+        Returns:
+            A Config instance with values from userdata, defaults for missing keys.
+        """
+        data: dict[str, Any] = {}
+
+        if "null_markers" in userdata:
+            data["null_markers"] = [
+                m.strip() for m in userdata["null_markers"].split(",")
+            ]
+
+        for key in ("secret_backend", "secret_path", "load_base_dir"):
+            if key in userdata:
+                data[key] = userdata[key]
+
+        for key in ("null_markers_by_column", "db_connections", "type_overrides"):
+            if key in userdata:
+                try:
+                    data[key] = json.loads(userdata[key])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+        return cls.from_dict(data)

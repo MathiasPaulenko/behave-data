@@ -122,6 +122,7 @@ def product(overrides):
 from behave_data import Config
 
 config = Config()
+config = Config.from_userdata(context.config.userdata)
 config = Config.from_file("behave_data.yml")
 ```
 

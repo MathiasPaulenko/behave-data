@@ -6,7 +6,7 @@ import logging
 import re
 from typing import Any
 
-from behave_data.config import Config
+from behave_data.config import Config, _KNOWN_KEYS
 from behave_data.manager import DataManager
 from behave_data.patch import apply_patches
 
@@ -21,11 +21,25 @@ def setup_data(context: Any, config: Config | None = None) -> None:
 
     Stores the configuration, creates a DataManager, and applies table patches.
 
+    Configuration priority:
+    1. Explicit ``config`` parameter
+    2. ``context.config.userdata`` (from ``behave.ini`` ``[userdata]``)
+    3. ``behave_data.yml`` file
+
     Args:
         context: The Behave context object.
-        config: Configuration to use. If None, loads from ``behave_data.yml``.
+        config: Configuration to use. If None, checks userdata then file.
     """
-    cfg = config if config is not None else Config.from_file("behave_data.yml")
+    if config is not None:
+        cfg = config
+    elif hasattr(context, "config") and hasattr(context.config, "userdata"):
+        userdata = context.config.userdata
+        if isinstance(userdata, dict) and any(k in userdata for k in _KNOWN_KEYS):
+            cfg = Config.from_userdata(userdata)
+        else:
+            cfg = Config.from_file("behave_data.yml")
+    else:
+        cfg = Config.from_file("behave_data.yml")
     context.data = DataManager(cfg)
     apply_patches()
 
