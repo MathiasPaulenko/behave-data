@@ -92,10 +92,16 @@ def before_step_hook(context: Any, step: Any) -> None:
     for row in raw.rows:
         resolved_rows.append([_resolve_placeholders(cell, context) for cell in row])
 
-    context.resolved_table = {
-        "headings": resolved_rows[0],
-        "rows": resolved_rows[1:],
-    }
+    if not resolved_rows:
+        context.resolved_table = {
+            "headings": list(raw._rows[0]) if raw._rows else [],
+            "rows": [],
+        }
+    else:
+        context.resolved_table = {
+            "headings": resolved_rows[0],
+            "rows": resolved_rows[1:],
+        }
 
 
 def before_feature_hook(context: Any, feature: Any) -> None:

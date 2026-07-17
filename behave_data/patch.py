@@ -137,6 +137,8 @@ def revert_patches() -> None:
     try:
         from behave.model import Table
     except ImportError:
+        _ORIGINAL_METHODS.clear()
+        _IS_PATCHED = False
         return
 
     for name in _METHOD_NAMES:

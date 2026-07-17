@@ -34,10 +34,11 @@ class DataManager:
         self,
         name: str,
         count: int = 1,
+        includes: dict[str, str] | None = None,
         overrides: dict[str, Any] | None = None,
     ) -> dict[str, Any] | list[dict[str, Any]]:
         """Delegate to BuilderRegistry.build()."""
-        return self.builders.build(name, count=count, overrides=overrides)
+        return self.builders.build(name, count=count, includes=includes, overrides=overrides)
 
     def resolve(self, value: Any) -> Any:
         """Resolve a placeholder string via secrets.resolve_placeholder().

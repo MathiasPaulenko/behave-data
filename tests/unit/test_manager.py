@@ -100,3 +100,11 @@ class TestFixturesAndBuilders:
         dm = DataManager()
         dm.builders.register("user", lambda o: {"name": "Bob", **o})
         assert dm.build("user")["name"] == "Bob"
+
+    def test_build_with_includes(self) -> None:
+        dm = DataManager()
+        dm.builders.register("address", lambda o: {"city": "NYC"})
+        dm.builders.register("user", lambda o: {"name": "Alice", **o})
+        result = dm.build("user", includes={"address": "address"})
+        assert result["name"] == "Alice"
+        assert result["address"]["city"] == "NYC"
