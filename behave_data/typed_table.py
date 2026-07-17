@@ -65,7 +65,8 @@ class TypedTableWrapper(TableWrapper):
                 if resolved is None:
                     typed_row[clean_name] = None
                 elif converter is not None:
-                    typed_row[clean_name] = convert_cell(resolved, converter, clean_name)
+                    type_name = header.rsplit(":", 1)[-1].rstrip("?") if ":" in header else ""
+                    typed_row[clean_name] = convert_cell(resolved, converter, clean_name, type_name)
                 else:
                     typed_row[clean_name] = resolved
             result.append(typed_row)

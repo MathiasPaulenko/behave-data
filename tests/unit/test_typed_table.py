@@ -115,6 +115,13 @@ class TestTypedDicts:
         with pytest.raises(TypeConversionError):
             tw.typed_dicts()
 
+    def test_invalid_type_includes_type_name(self, make_table: object) -> None:
+        table = make_table(["age:int"], [["abc"]])
+        tw = TypedTableWrapper(table)
+        with pytest.raises(TypeConversionError) as exc_info:
+            tw.typed_dicts()
+        assert "int" in str(exc_info.value)
+
     def test_mixed_types(self, make_table: object) -> None:
         table = make_table(
             ["name:str", "age:int", "active:bool"],
