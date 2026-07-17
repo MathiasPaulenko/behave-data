@@ -39,6 +39,12 @@ class TestBuilderRegistry:
         with pytest.raises(BuilderNotFoundError):
             reg.build("nonexistent")
 
+    def test_build_negative_count_raises(self) -> None:
+        reg = BuilderRegistry()
+        reg.register("user", lambda o: {"name": "Alice"})
+        with pytest.raises(ValueError, match="non-negative"):
+            reg.build("user", count=-1)
+
     def test_names(self) -> None:
         reg = BuilderRegistry()
         reg.register("a", lambda o: {})

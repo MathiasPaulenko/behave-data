@@ -77,6 +77,8 @@ class FixtureRegistry:
         for key, value in data.items():
             if isinstance(value, str) and value.startswith("ref:"):
                 ref_name = value[4:]
+                if not ref_name:
+                    raise ValueError("Fixture reference name cannot be empty in 'ref:' value")
                 if ref_name in in_progress:
                     raise BehaveDataError(f"Circular fixture reference: {ref_name}")
                 if ref_name not in self._fixtures:

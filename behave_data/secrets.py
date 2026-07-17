@@ -79,6 +79,8 @@ def resolve_placeholder(
         if manager is None:
             raise ValueError("Cannot resolve 'ref:' placeholder without a manager")
         fixture_name = value[4:]
+        if not fixture_name:
+            raise ValueError("Fixture name cannot be empty in 'ref:' placeholder")
         data = manager.fixture(fixture_name)
         if data is None:
             raise FixtureNotFoundError(fixture_name)

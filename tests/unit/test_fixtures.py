@@ -53,6 +53,12 @@ class TestFixtureRegistry:
         with pytest.raises(FixtureNotFoundError):
             reg.get("a")
 
+    def test_ref_empty_name_raises(self) -> None:
+        reg = FixtureRegistry()
+        reg.register("a", lambda: {"b": "ref:"})
+        with pytest.raises(ValueError, match="cannot be empty"):
+            reg.get("a")
+
 
 class TestDataFixtureDecorator:
     def test_basic_registration(self) -> None:

@@ -29,6 +29,8 @@ class BuilderRegistry:
     ) -> dict[str, Any] | list[dict[str, Any]]:
         if name not in self._builders:
             raise BuilderNotFoundError(name)
+        if count < 0:
+            raise ValueError(f"count must be non-negative, got {count}")
         ov = overrides or {}
         if count == 0:
             return []

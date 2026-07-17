@@ -76,6 +76,11 @@ class TestRefPlaceholder:
         with pytest.raises(ValueError, match="Cannot resolve 'ref:'"):
             resolve_placeholder("ref:user")
 
+    def test_ref_empty_name_raises(self) -> None:
+        manager = MagicMock()
+        with pytest.raises(ValueError, match="cannot be empty"):
+            resolve_placeholder("ref:", manager=manager)
+
 
 class TestNonPlaceholder:
     def test_plain_value_returned_as_is(self) -> None:
