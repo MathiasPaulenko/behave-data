@@ -4,15 +4,15 @@ behave-data can be configured via `behave.ini` `[userdata]`, a YAML/JSON file, o
 
 ## behave.ini (recommended)
 
-Use Behave's native `[userdata]` section — no extra files:
+Use Behave's native `[userdata]` section with `behave_data.` prefixed keys — no extra files and no collisions with other userdata:
 
 ```ini
 # behave.ini
 [userdata]
-null_markers = ,null,None,N/A
-secret_backend = env
-secret_path = secrets/
-load_base_dir = features/data/
+behave_data.null_markers = ,null,None,N/A
+behave_data.secret_backend = env
+behave_data.secret_path = secrets/
+behave_data.load_base_dir = features/data/
 ```
 
 `setup_data(context)` reads `context.config.userdata` automatically. No extra code needed.
@@ -23,11 +23,11 @@ Dict-valued options use JSON strings in `[userdata]`:
 
 ```ini
 [userdata]
-null_markers = ,null,None,N/A
-secret_backend = env
-null_markers_by_column = {"phone": ["N/A", "null"]}
-db_connections = {"default": "sqlite:///test.db"}
-type_overrides = {"age": "int"}
+behave_data.null_markers = ,null,None,N/A
+behave_data.secret_backend = env
+behave_data.null_markers_by_column = {"phone": ["N/A", "null"]}
+behave_data.db_connections = {"default": "sqlite:///test.db"}
+behave_data.type_overrides = {"age": "int"}
 ```
 
 ## YAML file
@@ -82,20 +82,20 @@ config = Config(
 `setup_data(context)` resolves config in this order:
 
 1. **Explicit parameter** — `setup_data(context, my_config)`
-2. **`behave.ini` `[userdata]`** — if any known keys are present in `context.config.userdata`
+2. **`behave.ini` `[userdata]`** — if any `behave_data.*` keys are present in `context.config.userdata`
 3. **`behave_data.yml`** — fallback file
 
 ## Options
 
-| Option | Default | Type | Description |
-|--------|---------|------|-------------|
-| `null_markers` | `{"", "null", "None", "N/A"}` | comma-separated | Values converted to `None` |
-| `null_markers_by_column` | `{}` | JSON string | Per-column null marker overrides |
-| `secret_backend` | `"file"` | string | Backend for `secret:` placeholders |
-| `secret_path` | `"secrets/"` | string | Base path for `file:` secrets |
-| `load_base_dir` | `"features/data/"` | string | Base path for dynamic Examples |
-| `db_connections` | `{}` | JSON string | Named database connection strings |
-| `type_overrides` | `{}` | JSON string | Per-column type overrides |
+| Userdata key              | YAML key                  | Default                      | Type             | Description                          |
+|---------------------------|---------------------------|------------------------------|------------------|--------------------------------------|
+| `behave_data.null_markers` | `null_markers`            | `{"", "null", "None", "N/A"}` | comma-separated | Values converted to `None`           |
+| `behave_data.null_markers_by_column` | `null_markers_by_column` | `{}`                         | JSON string      | Per-column null marker overrides     |
+| `behave_data.secret_backend` | `secret_backend`          | `"file"`                     | string           | Backend for `secret:` placeholders   |
+| `behave_data.secret_path` | `secret_path`             | `"secrets/"`                 | string           | Base path for `file:` secrets        |
+| `behave_data.load_base_dir` | `load_base_dir`           | `"features/data/"`           | string           | Base path for dynamic Examples       |
+| `behave_data.db_connections` | `db_connections`          | `{}`                         | JSON string      | Named database connection strings    |
+| `behave_data.type_overrides` | `type_overrides`          | `{}`                         | JSON string      | Per-column type overrides            |
 
 ## Loading config manually
 

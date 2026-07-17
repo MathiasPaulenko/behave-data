@@ -140,10 +140,15 @@ class Config:
     def from_userdata(cls, userdata: dict[str, str]) -> Config:
         """Create a Config from Behave's ``[userdata]`` dict (from ``behave.ini``).
 
+        Keys must be prefixed with ``behave_data.`` to avoid collisions with
+        other userdata entries. The prefix is stripped before processing.
+
         Flat string values are parsed:
-        - ``null_markers``: comma-separated string
-        - ``null_markers_by_column``, ``db_connections``, ``type_overrides``: JSON string
-        - ``secret_backend``, ``secret_path``, ``load_base_dir``: string directly
+        - ``behave_data.null_markers``: comma-separated string
+        - ``behave_data.null_markers_by_column``, ``behave_data.db_connections``,
+          ``behave_data.type_overrides``: JSON string
+        - ``behave_data.secret_backend``, ``behave_data.secret_path``,
+          ``behave_data.load_base_dir``: string directly
 
         Only keys present in *userdata* are used; defaults fill the rest.
 
@@ -154,21 +159,28 @@ class Config:
         Returns:
             A Config instance with values from userdata, defaults for missing keys.
         """
+        prefix = "behave_data."
+        filtered = {
+            k[len(prefix):]: v
+            for k, v in userdata.items()
+            if k.startswith(prefix)
+        }
+
         data: dict[str, Any] = {}
 
-        if "null_markers" in userdata:
+        if "null_markers" in filtered:
             data["null_markers"] = [
-                m.strip() for m in userdata["null_markers"].split(",")
+                m.strip() for m in filtered["null_markers"].split(",")
             ]
 
         for key in ("secret_backend", "secret_path", "load_base_dir"):
-            if key in userdata:
-                data[key] = userdata[key]
+            if key in filtered:
+                data[key] = filtered[key]
 
         for key in ("null_markers_by_column", "db_connections", "type_overrides"):
-            if key in userdata:
+            if key in filtered:
                 try:
-                    data[key] = json.loads(userdata[key])
+                    data[key] = json.loads(filtered[key])
                 except (json.JSONDecodeError, TypeError):
                     pass
 

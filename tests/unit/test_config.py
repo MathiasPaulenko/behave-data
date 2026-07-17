@@ -181,53 +181,62 @@ class TestFromUserdata:
         assert cfg == Config()
 
     def test_null_markers_comma_separated(self) -> None:
-        cfg = Config.from_userdata({"null_markers": ",null,None,N/A"})
+        cfg = Config.from_userdata({"behave_data.null_markers": ",null,None,N/A"})
         assert cfg.null_markers == frozenset({"", "null", "None", "N/A"})
 
     def test_secret_backend_string(self) -> None:
-        cfg = Config.from_userdata({"secret_backend": "env"})
+        cfg = Config.from_userdata({"behave_data.secret_backend": "env"})
         assert cfg.secret_backend == "env"
 
     def test_secret_path_string(self) -> None:
-        cfg = Config.from_userdata({"secret_path": "/tmp/secrets"})
+        cfg = Config.from_userdata({"behave_data.secret_path": "/tmp/secrets"})
         assert cfg.secret_path == "/tmp/secrets"
 
     def test_load_base_dir_string(self) -> None:
-        cfg = Config.from_userdata({"load_base_dir": "data/"})
+        cfg = Config.from_userdata({"behave_data.load_base_dir": "data/"})
         assert cfg.load_base_dir == "data/"
 
     def test_null_markers_by_column_json(self) -> None:
         cfg = Config.from_userdata(
-            {"null_markers_by_column": json.dumps({"phone": ["N/A", "null"]})}
+            {"behave_data.null_markers_by_column": json.dumps({"phone": ["N/A", "null"]})}
         )
         assert cfg.null_markers_by_column["phone"] == frozenset({"N/A", "null"})
 
     def test_db_connections_json(self) -> None:
         cfg = Config.from_userdata(
-            {"db_connections": json.dumps({"default": "sqlite:///test.db"})}
+            {"behave_data.db_connections": json.dumps({"default": "sqlite:///test.db"})}
         )
         assert cfg.db_connections == {"default": "sqlite:///test.db"}
 
     def test_type_overrides_json(self) -> None:
         cfg = Config.from_userdata(
-            {"type_overrides": json.dumps({"age": "int"})}
+            {"behave_data.type_overrides": json.dumps({"age": "int"})}
         )
         assert cfg.type_overrides == {"age": "int"}
 
     def test_invalid_json_skipped(self) -> None:
         cfg = Config.from_userdata(
-            {"db_connections": "not json", "secret_backend": "env"}
+            {"behave_data.db_connections": "not json", "behave_data.secret_backend": "env"}
         )
         assert cfg.db_connections == {}
         assert cfg.secret_backend == "env"
 
     def test_partial_userdata_merges_with_defaults(self) -> None:
-        cfg = Config.from_userdata({"secret_backend": "env"})
+        cfg = Config.from_userdata({"behave_data.secret_backend": "env"})
         assert cfg.secret_backend == "env"
         assert cfg.null_markers == DEFAULT_NULL_MARKERS
         assert cfg.secret_path == "secrets/"
 
-    def test_ignores_unknown_keys(self) -> None:
-        cfg = Config.from_userdata({"unknown_key": "value", "secret_backend": "env"})
+    def test_ignores_unprefixed_keys(self) -> None:
+        cfg = Config.from_userdata({"secret_backend": "env", "behave_data.secret_backend": "file"})
+        assert cfg.secret_backend == "file"
+
+    def test_ignores_unknown_prefixed_keys(self) -> None:
+        cfg = Config.from_userdata({"behave_data.unknown_key": "value", "behave_data.secret_backend": "env"})
         assert cfg.secret_backend == "env"
         assert not hasattr(cfg, "unknown_key")
+
+    def test_mixed_prefixed_and_unprefixed(self) -> None:
+        cfg = Config.from_userdata({"other_lib.foo": "bar", "behave_data.secret_backend": "env"})
+        assert cfg.secret_backend == "env"
+        assert not hasattr(cfg, "foo")

@@ -6,7 +6,7 @@ import logging
 import re
 from typing import Any
 
-from behave_data.config import Config, _KNOWN_KEYS
+from behave_data.config import Config
 from behave_data.manager import DataManager
 from behave_data.patch import apply_patches
 
@@ -34,7 +34,9 @@ def setup_data(context: Any, config: Config | None = None) -> None:
         cfg = config
     elif hasattr(context, "config") and hasattr(context.config, "userdata"):
         userdata = context.config.userdata
-        if isinstance(userdata, dict) and any(k in userdata for k in _KNOWN_KEYS):
+        if isinstance(userdata, dict) and any(
+            k.startswith("behave_data.") for k in userdata
+        ):
             cfg = Config.from_userdata(userdata)
         else:
             cfg = Config.from_file("behave_data.yml")
