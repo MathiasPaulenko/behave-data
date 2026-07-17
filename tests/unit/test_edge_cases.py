@@ -611,3 +611,70 @@ class TestDataManagerEdge:
         assert isinstance(items, list)
         assert len(items) == 2
         assert all(i["name"] == "custom" for i in items)
+
+
+# --------------------------------------------------------------------------- #
+# Regression tests — Round 2
+# --------------------------------------------------------------------------- #
+
+
+class TestSimpleRowHeaders:
+    """Regression: _SimpleRow must receive headers so as_dict() works."""
+
+    def test_simple_row_as_dict_with_headers(self) -> None:
+        from behave_data.examples import _SimpleRow
+
+        row = _SimpleRow(["Alice", "30"], ["name", "age"])
+        assert row.as_dict() == {"name": "Alice", "age": "30"}
+
+    def test_simple_row_as_dict_empty_headers(self) -> None:
+        from behave_data.examples import _SimpleRow
+
+        row = _SimpleRow(["Alice"], [])
+        assert row.as_dict() == {}
+
+
+class TestSecretEmptyName:
+    """Regression: secret: with empty name must raise ValueError."""
+
+    def test_secret_empty_name_raises(self) -> None:
+        from behave_data.secrets import resolve_placeholder
+
+        with pytest.raises(ValueError, match="cannot be empty"):
+            resolve_placeholder("secret:")
+
+
+class TestMaskUnhashable:
+    """Regression: mask() must not crash on unhashable values."""
+
+    def test_mask_list_returns_original(self) -> None:
+        dm = DataManager()
+        assert dm.mask([1, 2, 3]) == [1, 2, 3]
+
+    def test_mask_dict_returns_original(self) -> None:
+        dm = DataManager()
+        assert dm.mask({"key": "val"}) == {"key": "val"}
+
+
+class TestJsonLoaderNonDictItems:
+    """Regression: JSON list with non-dict items must raise ValueError."""
+
+    def test_json_list_with_integers_raises(self, tmp_path: Path) -> None:
+        import json as json_mod
+
+        from behave_data.loaders.json import JsonLoader
+
+        f = tmp_path / "data.json"
+        f.write_text(json_mod.dumps([1, 2, 3]), encoding="utf-8")
+        with pytest.raises(ValueError, match="must be dicts"):
+            JsonLoader().load(str(f), Config())
+
+    def test_json_list_with_strings_raises(self, tmp_path: Path) -> None:
+        import json as json_mod
+
+        from behave_data.loaders.json import JsonLoader
+
+        f = tmp_path / "data.json"
+        f.write_text(json_mod.dumps(["a", "b"]), encoding="utf-8")
+        with pytest.raises(ValueError, match="must be dicts"):
+            JsonLoader().load(str(f), Config())

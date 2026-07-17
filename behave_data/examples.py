@@ -54,7 +54,7 @@ def _replace_example_rows(example: Any, data: list[dict[str, Any]]) -> None:
         example.table.rows = []
         for row_data in data:
             cells = [str(row_data.get(h, "")) for h in headers]
-            example.table.rows.append(_SimpleRow(cells))
+            example.table.rows.append(_SimpleRow(cells, headers))
         return
 
     example.table.headings = headers

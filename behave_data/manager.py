@@ -66,10 +66,13 @@ class DataManager:
 
         Returns:
             ``"***"`` if value hash is in _secret_hashes, else original value.
-            None returns None.
+            None returns None. Unhashable values return original value.
         """
         if value is None:
             return None
-        if hash(value) in self._secret_hashes:
-            return "***"
+        try:
+            if hash(value) in self._secret_hashes:
+                return "***"
+        except TypeError:
+            pass
         return value

@@ -109,6 +109,9 @@ def _resolve_secret(name: str, config: Config) -> str | None:
     """
     backend = config.secret_backend
 
+    if not name:
+        raise ValueError("Secret name cannot be empty in 'secret:' placeholder")
+
     if backend == "file":
         full_path = Path(config.secret_path) / name
         _validate_path_within_base(full_path, Path(config.secret_path))

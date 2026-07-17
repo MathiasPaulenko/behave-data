@@ -28,6 +28,9 @@ class JsonLoader:
             data = json.load(f)
 
         if isinstance(data, list):
+            for item in data:
+                if not isinstance(item, dict):
+                    raise ValueError(f"JSON list items must be dicts, got {type(item).__name__}")
             return data
         if isinstance(data, dict):
             return [data]
