@@ -71,8 +71,12 @@ class TestTableDiffError:
         with pytest.raises(AssertionError):
             raise TableDiffError("diff")
 
-    def test_not_inherits_behave_data_error(self) -> None:
-        assert not issubclass(TableDiffError, BehaveDataError)
+    def test_inherits_behave_data_error(self) -> None:
+        assert issubclass(TableDiffError, BehaveDataError)
+
+    def test_catchable_as_behave_data_error(self) -> None:
+        with pytest.raises(BehaveDataError):
+            raise TableDiffError("diff")
 
     def test_has_diff_output_attribute(self) -> None:
         err = TableDiffError("output")

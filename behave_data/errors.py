@@ -32,8 +32,12 @@ class TypeConversionError(BehaveDataError):
         )
 
 
-class TableDiffError(AssertionError):
+class TableDiffError(BehaveDataError, AssertionError):
     """Raised when two tables are not identical.
+
+    Inherits from both ``BehaveDataError`` and ``AssertionError`` so that
+    ``except BehaveDataError`` catches it, and Behave treats it as a test
+    failure.
 
     Attributes:
         diff_output: The human-readable diff string.
