@@ -29,15 +29,17 @@ def process_tags_before_scenario(context: Any, scenario: Any) -> None:
         context._behave_data_loaded = {}
 
     for tag in tags:
-        if tag.startswith("@needs_data:"):
-            name = tag[len("@needs_data:") :]
+        tag = tag.lstrip("@")
+        if tag.startswith("needs_data:"):
+            name = tag[len("needs_data:") :]
             data = context.data.fixture(name)
             context._behave_data_loaded[name] = data
-        elif tag.startswith("@with_fixture:"):
-            name = tag[len("@with_fixture:") :]
+            setattr(context, name, data)
+        elif tag.startswith("with_fixture:"):
+            name = tag[len("with_fixture:") :]
             data = context.data.fixture(name)
             setattr(context, name, data)
-        elif tag == "@cleanup_after":
+        elif tag == "cleanup_after":
             context._behave_data_cleanup = True
             if not hasattr(context, "_behave_data_cleanup_funcs"):
                 context._behave_data_cleanup_funcs = []
@@ -58,6 +60,9 @@ def process_tags_after_scenario(context: Any, scenario: Any) -> None:
 
     funcs = getattr(context, "_behave_data_cleanup_funcs", [])
     for func in funcs:
-        func(context)
+        try:
+            func(context)
+        except TypeError:
+            func()
 
     context._behave_data_cleanup = False

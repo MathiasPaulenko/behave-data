@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-07-17
+
+### Added
+
+- 75 edge case unit tests covering hooks, secrets, examples, raw_table, yaml, types, diff, fixtures, loaders, config, and manager
+- 4 new E2E Behave integration features: fixtures_builders, secrets, typed_table_edge, dynamic_examples
+- 27 E2E scenarios with 64 steps testing all behave-data features in real Behave
+
+### Fixed
+
+- `tags.py` now strips `@` prefix from Behave tags (Behave strips `@` from scenario tags)
+- `tags.py` `@needs_data` now sets attribute on context in addition to `_behave_data_loaded`
+- `tags.py` cleanup functions now support both `func(context)` and `func()` signatures
+
+### Changed
+
+- Coverage increased from 94% to 98%
+- Total tests: 411 passed, 1 skipped (pandas optional)
+
 ## [0.1.2] - 2026-07-17
 
 ### Fixed
