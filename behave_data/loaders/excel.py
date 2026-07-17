@@ -36,9 +36,12 @@ class ExcelLoader:
             ) from None
 
         wb = openpyxl.load_workbook(source, read_only=True)
-        ws = wb.active
-        rows = list(ws.iter_rows(values_only=True))
-        wb.close()
+        try:
+            ws = wb.active
+            assert ws is not None
+            rows = list(ws.iter_rows(values_only=True))
+        finally:
+            wb.close()
 
         if not rows:
             return []

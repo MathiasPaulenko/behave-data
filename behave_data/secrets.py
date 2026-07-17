@@ -10,6 +10,26 @@ from behave_data.config import Config
 from behave_data.errors import FixtureNotFoundError, OptionalDependencyError
 
 
+def _validate_path_within_base(path: Path, base: Path) -> None:
+    """Validate that a resolved path stays within the base directory.
+
+    Prevents path traversal attacks (e.g. ``../../etc/passwd``).
+
+    Args:
+        path: The resolved absolute path to check.
+        base: The base directory that path must stay within.
+
+    Raises:
+        ValueError: If the path escapes the base directory.
+    """
+    try:
+        path.resolve().relative_to(base.resolve())
+    except ValueError:
+        raise ValueError(
+            f"Path '{path}' escapes base directory '{base}' — path traversal not allowed"
+        ) from None
+
+
 def resolve_placeholder(
     value: str,
     config: Config | None = None,
@@ -41,11 +61,16 @@ def resolve_placeholder(
 
     if value.startswith("env:"):
         var_name = value[4:]
+        if not var_name:
+            raise ValueError("Environment variable name cannot be empty in 'env:' placeholder")
         return os.environ.get(var_name)
 
     if value.startswith("file:"):
         file_path = value[5:]
+        if not file_path:
+            raise ValueError("File path cannot be empty in 'file:' placeholder")
         full_path = Path(cfg.secret_path) / file_path
+        _validate_path_within_base(full_path, Path(cfg.secret_path))
         if not full_path.exists():
             raise FileNotFoundError(f"Secret file not found: {full_path}")
         return full_path.read_text(encoding="utf-8").strip()
@@ -57,8 +82,6 @@ def resolve_placeholder(
         data = manager.fixture(fixture_name)
         if data is None:
             raise FixtureNotFoundError(fixture_name)
-        if isinstance(data, dict):
-            return str(data)
         return str(data)
 
     if value.startswith("secret:"):
@@ -88,6 +111,7 @@ def _resolve_secret(name: str, config: Config) -> str | None:
 
     if backend == "file":
         full_path = Path(config.secret_path) / name
+        _validate_path_within_base(full_path, Path(config.secret_path))
         if not full_path.exists():
             raise FileNotFoundError(f"Secret file not found: {full_path}")
         return full_path.read_text(encoding="utf-8").strip()

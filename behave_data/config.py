@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -160,18 +161,12 @@ class Config:
             A Config instance with values from userdata, defaults for missing keys.
         """
         prefix = "behave_data."
-        filtered = {
-            k[len(prefix):]: v
-            for k, v in userdata.items()
-            if k.startswith(prefix)
-        }
+        filtered = {k[len(prefix) :]: v for k, v in userdata.items() if k.startswith(prefix)}
 
         data: dict[str, Any] = {}
 
         if "null_markers" in filtered:
-            data["null_markers"] = [
-                m.strip() for m in filtered["null_markers"].split(",")
-            ]
+            data["null_markers"] = [m.strip() for m in filtered["null_markers"].split(",")]
 
         for key in ("secret_backend", "secret_path", "load_base_dir"):
             if key in filtered:
@@ -179,9 +174,7 @@ class Config:
 
         for key in ("null_markers_by_column", "db_connections", "type_overrides"):
             if key in filtered:
-                try:
+                with contextlib.suppress(json.JSONDecodeError, TypeError):
                     data[key] = json.loads(filtered[key])
-                except (json.JSONDecodeError, TypeError):
-                    pass
 
         return cls.from_dict(data)

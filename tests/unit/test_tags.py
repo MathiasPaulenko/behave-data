@@ -70,3 +70,26 @@ class TestProcessTagsAfterScenario:
         process_tags_after_scenario(ctx, scenario)
         assert ctx.cleaned is True
         assert ctx._behave_data_cleanup is False
+
+    def test_cleanup_executes_no_arg_funcs(self) -> None:
+        ctx = MagicMock()
+        ctx._behave_data_cleanup = True
+        called: list[bool] = []
+        ctx._behave_data_cleanup_funcs = [lambda: called.append(True)]
+        scenario = FakeScenario()
+        process_tags_after_scenario(ctx, scenario)
+        assert called == [True]
+        assert ctx._behave_data_cleanup is False
+
+    def test_cleanup_executes_mixed_funcs(self) -> None:
+        ctx = MagicMock()
+        ctx._behave_data_cleanup = True
+        results: list[str] = []
+        ctx._behave_data_cleanup_funcs = [
+            lambda c: results.append("with_ctx"),
+            lambda: results.append("no_ctx"),
+        ]
+        scenario = FakeScenario()
+        process_tags_after_scenario(ctx, scenario)
+        assert results == ["with_ctx", "no_ctx"]
+        assert ctx._behave_data_cleanup is False

@@ -11,7 +11,7 @@ from behave_data.null import get_column_markers, resolve_null
 from behave_data.types import convert_cell, parse_column_header
 
 
-class TypedTableWrapper(TableWrapper):  # type: ignore[misc]
+class TypedTableWrapper(TableWrapper):
     """Extends TableWrapper with column typing, null resolution, and conversions.
 
     Adds ``typed_dicts()``, ``typed_objects()``, ``clean_headers()``,

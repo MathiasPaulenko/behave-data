@@ -23,6 +23,10 @@ class TestEnvPlaceholder:
         result = resolve_placeholder("env:NONEXISTENT_VAR_12345")
         assert result is None
 
+    def test_env_empty_var_name_raises(self) -> None:
+        with pytest.raises(ValueError, match="cannot be empty"):
+            resolve_placeholder("env:")
+
 
 class TestFilePlaceholder:
     def test_file_exists(self, tmp_path: Path) -> None:
@@ -43,6 +47,16 @@ class TestFilePlaceholder:
         config = Config(secret_path=str(tmp_path))
         result = resolve_placeholder("file:key.txt", config)
         assert result == "secret_value"
+
+    def test_file_empty_path_raises(self, tmp_path: Path) -> None:
+        config = Config(secret_path=str(tmp_path))
+        with pytest.raises(ValueError, match="cannot be empty"):
+            resolve_placeholder("file:", config)
+
+    def test_file_path_traversal_raises(self, tmp_path: Path) -> None:
+        config = Config(secret_path=str(tmp_path))
+        with pytest.raises(ValueError, match="path traversal"):
+            resolve_placeholder("file:../../etc/passwd", config)
 
 
 class TestRefPlaceholder:
@@ -91,6 +105,11 @@ class TestSecretBackend:
         config = Config(secret_backend="file", secret_path=str(tmp_path))
         with pytest.raises(FileNotFoundError):
             resolve_placeholder("secret:nonexistent", config)
+
+    def test_secret_file_path_traversal_raises(self, tmp_path: Path) -> None:
+        config = Config(secret_backend="file", secret_path=str(tmp_path))
+        with pytest.raises(ValueError, match="path traversal"):
+            resolve_placeholder("secret:../../etc/passwd", config)
 
     def test_secret_unknown_backend(self) -> None:
         config = Config(secret_backend="invalid")

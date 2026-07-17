@@ -34,7 +34,7 @@ class SqlLoader:
                 "pip install behave-data[sql]",
             ) from None
 
-        db_name = getattr(config, "_sql_db_name", None) or "default"
+        db_name = "default"
         connection_string = config.db_connections.get(db_name)
         if connection_string is None:
             raise KeyError(f"Database '{db_name}' not found in config.db_connections")

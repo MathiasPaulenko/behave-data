@@ -209,9 +209,7 @@ class TestFromUserdata:
         assert cfg.db_connections == {"default": "sqlite:///test.db"}
 
     def test_type_overrides_json(self) -> None:
-        cfg = Config.from_userdata(
-            {"behave_data.type_overrides": json.dumps({"age": "int"})}
-        )
+        cfg = Config.from_userdata({"behave_data.type_overrides": json.dumps({"age": "int"})})
         assert cfg.type_overrides == {"age": "int"}
 
     def test_invalid_json_skipped(self) -> None:
@@ -232,7 +230,12 @@ class TestFromUserdata:
         assert cfg.secret_backend == "file"
 
     def test_ignores_unknown_prefixed_keys(self) -> None:
-        cfg = Config.from_userdata({"behave_data.unknown_key": "value", "behave_data.secret_backend": "env"})
+        cfg = Config.from_userdata(
+            {
+                "behave_data.unknown_key": "value",
+                "behave_data.secret_backend": "env",
+            }
+        )
         assert cfg.secret_backend == "env"
         assert not hasattr(cfg, "unknown_key")
 

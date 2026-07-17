@@ -19,6 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Testing",
     "Topic :: Software Development :: Testing :: BDD",
     "Typing :: Typed",
@@ -32,6 +33,8 @@ dependencies = [
 yaml = ["pyyaml>=6.0"]
 excel = ["openpyxl>=3.1"]
 pandas = ["pandas>=2.0"]
+http = ["requests>=2.31"]
+sql = ["sqlalchemy>=2.0"]
 vault = ["hvac>=2.0"]
 aws = ["boto3>=1.34"]
 docs = [

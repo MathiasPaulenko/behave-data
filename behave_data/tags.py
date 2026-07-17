@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from typing import Any
 
 
@@ -60,9 +61,10 @@ def process_tags_after_scenario(context: Any, scenario: Any) -> None:
 
     funcs = getattr(context, "_behave_data_cleanup_funcs", [])
     for func in funcs:
-        try:
+        sig = inspect.signature(func)
+        if len(sig.parameters) > 0:
             func(context)
-        except TypeError:
+        else:
             func()
 
     context._behave_data_cleanup = False

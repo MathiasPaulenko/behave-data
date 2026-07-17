@@ -34,9 +34,7 @@ def setup_data(context: Any, config: Config | None = None) -> None:
         cfg = config
     elif hasattr(context, "config") and hasattr(context.config, "userdata"):
         userdata = context.config.userdata
-        if isinstance(userdata, dict) and any(
-            k.startswith("behave_data.") for k in userdata
-        ):
+        if isinstance(userdata, dict) and any(k.startswith("behave_data.") for k in userdata):
             cfg = Config.from_userdata(userdata)
         else:
             cfg = Config.from_file("behave_data.yml")
