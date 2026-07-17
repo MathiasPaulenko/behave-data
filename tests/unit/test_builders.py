@@ -45,6 +45,15 @@ class TestBuilderRegistry:
         with pytest.raises(ValueError, match="non-negative"):
             reg.build("user", count=-1)
 
+    def test_circular_includes_raises(self) -> None:
+        from behave_data.errors import BehaveDataError
+
+        reg = BuilderRegistry()
+        reg.register("a", lambda o: {"name": "A"})
+        reg.register("b", lambda o: {"name": "B"})
+        with pytest.raises(BehaveDataError, match="Circular"):
+            reg.build("a", includes={"b": "b", "a": "a"})
+
     def test_names(self) -> None:
         reg = BuilderRegistry()
         reg.register("a", lambda o: {})

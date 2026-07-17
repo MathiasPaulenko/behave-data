@@ -70,7 +70,7 @@ Changelog = "https://github.com/MathiasPaulenko/behave-data/blob/main/CHANGELOG.
 csv = "behave_data.loaders.csv:CsvLoader"
 json = "behave_data.loaders.json:JsonLoader"
 yaml = "behave_data.loaders.yaml:YamlLoader"
-excel = "behave_data.loaders.excel:ExcelLoader"
+xlsx = "behave_data.loaders.excel:ExcelLoader"
 sql = "behave_data.loaders.sql:SqlLoader"
 http = "behave_data.loaders.http:HttpLoader"
 

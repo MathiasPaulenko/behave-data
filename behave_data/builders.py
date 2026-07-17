@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from behave_data.errors import BuilderNotFoundError
+from behave_data.errors import BehaveDataError, BuilderNotFoundError
 
 _GLOBAL_BUILDERS: dict[str, Callable[..., dict[str, Any]]] = {}
 
@@ -43,12 +43,17 @@ class BuilderRegistry:
         name: str,
         includes: dict[str, str] | None,
         overrides: dict[str, Any],
+        in_progress: set[str] | None = None,
     ) -> dict[str, Any]:
+        if in_progress is None:
+            in_progress = set()
+        if name in in_progress:
+            raise BehaveDataError(f"Circular builder reference: {name}")
         func = self._builders[name]
         data = func(overrides)
         if includes:
             for key, builder_name in includes.items():
-                data[key] = self.build(builder_name, count=1)
+                data[key] = self._build_one(builder_name, None, {}, in_progress | {name})
         return data
 
     def names(self) -> list[str]:
