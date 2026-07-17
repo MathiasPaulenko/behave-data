@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-import contextlib
 import json
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from behave_data.errors import OptionalDependencyError
+
+logger = logging.getLogger("behave_data")
+logger.addHandler(logging.NullHandler())
 
 DEFAULT_NULL_MARKERS: frozenset[str] = frozenset({"", "null", "None", "N/A"})
 
@@ -181,7 +184,13 @@ class Config:
 
         for key in ("null_markers_by_column", "db_connections", "type_overrides"):
             if key in filtered:
-                with contextlib.suppress(json.JSONDecodeError, TypeError):
+                try:
                     data[key] = json.loads(filtered[key])
+                except (json.JSONDecodeError, TypeError):
+                    logger.warning(
+                        "Invalid JSON for behave_data.%s in userdata — ignoring. Value: %r",
+                        key,
+                        filtered[key],
+                    )
 
         return cls.from_dict(data)

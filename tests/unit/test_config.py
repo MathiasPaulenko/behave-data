@@ -271,3 +271,10 @@ class TestFromDictEdgeCases:
     def test_null_markers_by_column_invalid_type_raises(self) -> None:
         with pytest.raises(TypeError, match="must be a list or string"):
             Config.from_dict({"null_markers_by_column": {"phone": 42}})
+
+    def test_from_userdata_invalid_json_logs_warning(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        cfg = Config.from_userdata({"behave_data.db_connections": "not valid json{"})
+        assert cfg.db_connections == {}
+        assert any("Invalid JSON" in r.message for r in caplog.records)
