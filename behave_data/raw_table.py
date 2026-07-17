@@ -103,7 +103,8 @@ class RawTable:
             return NotImplemented
         return self._rows == other._rows
 
-    __hash__ = None
+    def __hash__(self) -> int:
+        raise TypeError("unhashable type: 'RawTable'")
 
 
 def raw_table(table: TableLike) -> RawTable:

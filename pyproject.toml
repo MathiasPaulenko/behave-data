@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "behave-data"
-version = "0.1.1"
+version = "0.1.2"
 description = "Data management for Behave — typed tables, diff, dynamic examples, fixtures, secrets"
 readme = "README.md"
 license = "MIT"
@@ -85,3 +85,7 @@ omit = ["*/tests/*"]
 [tool.coverage.report]
 show_missing = true
 fail_under = 90
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true

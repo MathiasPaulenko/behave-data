@@ -68,8 +68,9 @@ def _replace_example_rows(example: Any, data: list[dict[str, Any]]) -> None:
 class _SimpleRow:
     """Fallback Row when behave.model.Row is not available."""
 
-    def __init__(self, cells: list[str]) -> None:
+    def __init__(self, cells: list[str], headers: list[str] | None = None) -> None:
         self.cells = cells
+        self._headers = headers or []
 
     def __getitem__(self, index: int) -> str:
         return self.cells[index]

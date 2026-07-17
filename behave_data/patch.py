@@ -121,7 +121,7 @@ def apply_patches() -> None:
             _ORIGINAL_METHODS[name] = getattr(Table, name)
         setattr(Table, name, _IMPLEMENTATIONS[name])
 
-    Table._behave_data_patched = True  # type: ignore[attr-defined]
+    Table._behave_data_patched = True
     _IS_PATCHED = True
 
 

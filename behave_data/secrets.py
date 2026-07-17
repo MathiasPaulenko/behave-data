@@ -108,7 +108,8 @@ def _resolve_secret(name: str, config: Config) -> str | None:
         token = os.environ.get("VAULT_TOKEN", "")
         client = hvac.Client(url=url, token=token)
         response = client.secrets.kv.v2.read_secret_version(path=name)
-        return response["data"]["data"].get("value")
+        result: str | None = response["data"]["data"].get("value")
+        return result
 
     if backend == "aws":
         try:
@@ -121,6 +122,7 @@ def _resolve_secret(name: str, config: Config) -> str | None:
             ) from None
         client = boto3.client("secretsmanager")
         response = client.get_secret_value(SecretId=name)
-        return response.get("SecretString")
+        aws_result: str | None = response.get("SecretString")
+        return aws_result
 
     raise ValueError(f"Unknown secret backend: {backend!r}")

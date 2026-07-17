@@ -45,7 +45,8 @@ def _resolve_loader(schema: str) -> Loader:
 
     module = importlib.import_module(module_path)
     loader_cls = getattr(module, class_name)
-    return loader_cls()
+    loader: Loader = loader_cls()
+    return loader
 
 
 def _detect_schema(source: str) -> str | None:

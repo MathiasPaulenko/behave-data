@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-07-17
+
+### Fixed
+
+- `mypy --strict` passes with zero errors
+- Added `[tool.mypy]` config with `ignore_missing_imports = true`
+- Fixed `RawTable.__hash__` type signature
+- Fixed `secrets.py` vault/aws return type annotations
+- Fixed `loaders/__init__.py` loader return type annotation
+- Fixed `examples.py` `_SimpleRow._headers` attribute
+- Removed unused `type: ignore` comments in `patch.py` and `raw_table.py`
+
 ## [0.1.1] - 2026-07-17
 
 ### Added
