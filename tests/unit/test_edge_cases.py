@@ -744,3 +744,74 @@ class TestLoaderEmptyPathAfterSchema:
     def test_yaml_empty_path_raises(self) -> None:
         with pytest.raises(ValueError, match="cannot be empty"):
             load("yaml:", Config())
+
+
+class TestCoverageGaps:
+    """Tests to close remaining coverage gaps."""
+
+    def test_setup_data_with_userdata_config(self) -> None:
+        """Cover hooks.py:36-40 — userdata with behave_data.* keys."""
+        ctx = type("Ctx", (), {})()
+        ctx.config = type("Cfg", (), {})()
+        ctx.config.userdata = {"behave_data.secret_backend": "env"}
+        with patch.object(Config, "from_userdata", return_value=Config()) as mock_ud:
+            setup_data(ctx)
+            mock_ud.assert_called_once()
+
+    def test_tags_with_feature_tags(self) -> None:
+        """Cover tags.py:30 — feature tags are included."""
+        from behave_data.tags import process_tags_before_scenario
+
+        ctx = type("Ctx", (), {})()
+        ctx.data = MagicMock()
+        scenario = MagicMock()
+        scenario.tags = []
+        scenario.feature = MagicMock()
+        scenario.feature.tags = ["needs_data:admin_user"]
+        process_tags_before_scenario(ctx, scenario)
+        assert hasattr(ctx, "_behave_data_loaded")
+
+    def test_tags_cleanup_after_sets_flag(self) -> None:
+        """Cover tags.py:46 — cleanup_after tag sets flag."""
+        from behave_data.tags import process_tags_before_scenario
+
+        ctx = type("Ctx", (), {})()
+        ctx.data = MagicMock()
+        scenario = MagicMock()
+        scenario.tags = ["cleanup_after"]
+        scenario.feature = None
+        process_tags_before_scenario(ctx, scenario)
+        assert ctx._behave_data_cleanup is True
+
+    def test_loader_not_found_raises(self) -> None:
+        """Cover loaders/__init__.py:42 — unknown schema raises LoaderNotFoundError."""
+        from behave_data.loaders import _resolve_loader
+
+        with pytest.raises(LoaderNotFoundError):
+            _resolve_loader("nonexistent")
+
+    def test_http_non_dict_response_raises(self) -> None:
+        """Cover http.py:68 — non-list/dict response raises ValueError."""
+        from behave_data.loaders.http import HttpLoader
+
+        loader = HttpLoader()
+        mock_response = MagicMock()
+        mock_response.json.return_value = "just a string"
+        with (
+            patch("requests.get", return_value=mock_response),
+            pytest.raises(ValueError, match="must be a list or dict"),
+        ):
+            loader.load("GET https://example.com/data", Config())
+
+    def test_http_non_dict_list_item_raises(self) -> None:
+        """Cover http.py:62 — non-dict items in list response raises ValueError."""
+        from behave_data.loaders.http import HttpLoader
+
+        loader = HttpLoader()
+        mock_response = MagicMock()
+        mock_response.json.return_value = ["not a dict", "also not a dict"]
+        with (
+            patch("requests.get", return_value=mock_response),
+            pytest.raises(ValueError, match="must be dicts"),
+        ):
+            loader.load("GET https://example.com/data", Config())
