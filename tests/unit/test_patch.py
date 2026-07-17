@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+
 import pytest
 
 from behave_data.patch import apply_patches, revert_patches
@@ -107,10 +109,13 @@ class TestApplyPatches:
         result = table.to_lists()
         assert result == [["Alice", 30], ["Bob", 25]]
 
-    def test_to_pandas_raises_without_pandas(self, patched_table_cls: type) -> None:
+    def test_to_pandas_raises_without_pandas(
+        self, patched_table_cls: type, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         table = patched_table_cls(["name:str"], [["Alice"]])
         from behave_data.errors import OptionalDependencyError
 
+        monkeypatch.setitem(sys.modules, "pandas", None)
         with pytest.raises(OptionalDependencyError):
             table.to_pandas()
 

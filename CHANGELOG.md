@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-07-17
+
+### Added
+
+- Sphinx documentation site with furo theme
+- 13 documentation pages: quickstart, installation, typed tables, null handling, diff, raw tables, dynamic examples, fixtures, builders, secrets, tags, hooks, configuration, API reference, migration guide, changelog
+- GitHub Actions workflow `docs.yml` to build and deploy docs to GitHub Pages
+- Documentation URL in `pyproject.toml`
+- `docs` and `all` optional dependency extras
+
+### Fixed
+
+- `test_to_pandas_raises_without_pandas` now uses `monkeypatch` on `sys.modules["pandas"]` for robustness when `pandas` extra is installed
+
 ## [0.1.3] - 2026-07-17
 
 ### Added
