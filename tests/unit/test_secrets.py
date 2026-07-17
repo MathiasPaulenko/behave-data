@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from behave_data.config import Config
-from behave_data.errors import FixtureNotFoundError
+from behave_data.errors import FixtureNotFoundError, OptionalDependencyError
 from behave_data.secrets import resolve_placeholder
 
 
@@ -71,3 +71,48 @@ class TestNonPlaceholder:
     def test_empty_string_returned(self) -> None:
         result = resolve_placeholder("")
         assert result == ""
+
+
+class TestSecretBackend:
+    def test_secret_env_backend(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("MY_SECRET", "env_secret_val")
+        config = Config(secret_backend="env")
+        result = resolve_placeholder("secret:MY_SECRET", config)
+        assert result == "env_secret_val"
+
+    def test_secret_file_backend(self, tmp_path: Path) -> None:
+        secret_file = tmp_path / "api_key"
+        secret_file.write_text("file_secret_val", encoding="utf-8")
+        config = Config(secret_backend="file", secret_path=str(tmp_path))
+        result = resolve_placeholder("secret:api_key", config)
+        assert result == "file_secret_val"
+
+    def test_secret_file_not_found(self, tmp_path: Path) -> None:
+        config = Config(secret_backend="file", secret_path=str(tmp_path))
+        with pytest.raises(FileNotFoundError):
+            resolve_placeholder("secret:nonexistent", config)
+
+    def test_secret_unknown_backend(self) -> None:
+        config = Config(secret_backend="invalid")
+        with pytest.raises(ValueError, match="Unknown secret backend"):
+            resolve_placeholder("secret:foo", config)
+
+    def test_secret_vault_not_installed(self) -> None:
+        import sys
+
+        config = Config(secret_backend="vault")
+        with (
+            patch.dict(sys.modules, {"hvac": None}),
+            pytest.raises(OptionalDependencyError, match="hvac"),
+        ):
+            resolve_placeholder("secret:foo", config)
+
+    def test_secret_aws_not_installed(self) -> None:
+        import sys
+
+        config = Config(secret_backend="aws")
+        with (
+            patch.dict(sys.modules, {"boto3": None}),
+            pytest.raises(OptionalDependencyError, match="boto3"),
+        ):
+            resolve_placeholder("secret:foo", config)

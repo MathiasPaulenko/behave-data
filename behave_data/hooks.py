@@ -1,13 +1,17 @@
-"""Behave hooks for behave-data MVP."""
+"""Behave hooks for behave-data."""
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
 from behave_data.config import Config
 from behave_data.manager import DataManager
 from behave_data.patch import apply_patches
+
+logger = logging.getLogger("behave_data")
+logger.addHandler(logging.NullHandler())
 
 _PLACEHOLDER_PATTERN = re.compile(r"\{([^}]+)\}")
 
@@ -78,3 +82,53 @@ def before_step_hook(context: Any, step: Any) -> None:
         "headings": list(raw[0]),
         "rows": resolved_rows,
     }
+
+
+def before_feature_hook(context: Any, feature: Any) -> None:
+    """Load dynamic Examples for a feature before it runs.
+
+    If context has no ``data`` attribute, logs a warning and no-ops.
+
+    Args:
+        context: The Behave context object.
+        feature: The Feature about to run.
+    """
+    if not hasattr(context, "data"):
+        logger.warning("context.data not initialized; skipping examples loading")
+        return
+    from behave_data.examples import load_examples_for_feature
+
+    config = getattr(context.data, "config", None) or Config()
+    load_examples_for_feature(feature, config)
+
+
+def before_scenario_hook(context: Any, scenario: Any) -> None:
+    """Process declarative tags before each scenario.
+
+    If context has no ``data`` attribute, no-ops.
+
+    Args:
+        context: The Behave context object.
+        scenario: The Scenario about to run.
+    """
+    if not hasattr(context, "data"):
+        return
+    from behave_data.tags import process_tags_before_scenario
+
+    process_tags_before_scenario(context, scenario)
+
+
+def after_scenario_hook(context: Any, scenario: Any) -> None:
+    """Execute cleanup after each scenario.
+
+    If context has no ``data`` attribute, no-ops.
+
+    Args:
+        context: The Behave context object.
+        scenario: The Scenario that just finished.
+    """
+    if not hasattr(context, "data"):
+        return
+    from behave_data.tags import process_tags_after_scenario
+
+    process_tags_after_scenario(context, scenario)
