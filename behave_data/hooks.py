@@ -93,8 +93,8 @@ def before_step_hook(context: Any, step: Any) -> None:
         resolved_rows.append([_resolve_placeholders(cell, context) for cell in row])
 
     context.resolved_table = {
-        "headings": list(raw[0]),
-        "rows": resolved_rows,
+        "headings": resolved_rows[0],
+        "rows": resolved_rows[1:],
     }
 
 

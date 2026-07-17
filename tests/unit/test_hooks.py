@@ -73,7 +73,7 @@ class TestBeforeStepHook:
         step = FakeStep(table=table)
         before_step_hook(ctx, step)
         assert ctx.resolved_table["headings"] == ["name"]
-        assert ctx.resolved_table["rows"] == [["name"], ["Alice"]]
+        assert ctx.resolved_table["rows"] == [["Alice"]]
 
     def test_without_table_no_error(self) -> None:
         ctx = FakeContext()
@@ -93,28 +93,28 @@ class TestBeforeStepHook:
         table = FakeTable(["name", "age"], [["Alice", "30"]])
         step = FakeStep(table=table)
         before_step_hook(ctx, step)
-        assert ctx.resolved_table["rows"] == [["name", "age"], ["Alice", "30"]]
+        assert ctx.resolved_table["rows"] == [["Alice", "30"]]
 
     def test_multiple_placeholders_in_one_cell(self) -> None:
         ctx = FakeContext(first="John", last="Doe")
         table = FakeTable(["full"], [["{first} {last}"]])
         step = FakeStep(table=table)
         before_step_hook(ctx, step)
-        assert ctx.resolved_table["rows"][1] == ["John Doe"]
+        assert ctx.resolved_table["rows"][0] == ["John Doe"]
 
     def test_nested_attribute_access(self) -> None:
         ctx = FakeContext(user=FakeContext(name="Bob"))
         table = FakeTable(["name"], [["{user.name}"]])
         step = FakeStep(table=table)
         before_step_hook(ctx, step)
-        assert ctx.resolved_table["rows"][1] == ["Bob"]
+        assert ctx.resolved_table["rows"][0] == ["Bob"]
 
     def test_unresolved_placeholder_left_unchanged(self) -> None:
         ctx = FakeContext()
         table = FakeTable(["name"], [["{unknown}"]])
         step = FakeStep(table=table)
         before_step_hook(ctx, step)
-        assert ctx.resolved_table["rows"][1] == ["{unknown}"]
+        assert ctx.resolved_table["rows"][0] == ["{unknown}"]
 
     def test_empty_table(self) -> None:
         ctx = FakeContext()
@@ -122,4 +122,4 @@ class TestBeforeStepHook:
         step = FakeStep(table=table)
         before_step_hook(ctx, step)
         assert ctx.resolved_table["headings"] == ["name"]
-        assert ctx.resolved_table["rows"] == [["name"]]
+        assert ctx.resolved_table["rows"] == []

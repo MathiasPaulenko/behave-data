@@ -203,3 +203,4 @@ def after_scenario(context, scenario):
 - `FixtureNotFoundError` — unknown fixture
 - `BuilderNotFoundError` — unknown builder
 - `OptionalDependencyError` — missing optional dependency
+- `RawTableError` — raw table operation failure
