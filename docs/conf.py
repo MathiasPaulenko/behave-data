@@ -29,8 +29,6 @@ html_theme = "furo"
 html_static_path = ["_static"]
 html_title = "behave-data"
 html_short_title = "behave-data"
-html_favicon = "_static/favicon.svg"
-html_logo = "_static/logo.svg"
 
 html_theme_options = {
     "source_repository": "https://github.com/MathiasPaulenko/behave-data",

@@ -4,12 +4,6 @@ hide-toc: true
 
 # behave-data
 
-```{image} _static/logo.svg
-:alt: behave-data logo
-:width: 120px
-:align: center
-```
-
 **Data management for [Behave](https://github.com/behave/behave) BDD framework.**
 
 Typed data tables, readable diffs, dynamic Examples from external sources, reusable fixtures & builders, secret resolution with masking, and declarative tags — all with zero boilerplate in your `environment.py`.
