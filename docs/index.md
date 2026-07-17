@@ -104,21 +104,57 @@ def step_users(context):
 
 ```{toctree}
 :maxdepth: 2
-:caption: Contents
+:caption: Getting Started
 
 quickstart
 installation
+configuration
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Data Tables
+
 typed_tables
 null_handling
 diff
 raw_tables
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Dynamic Data
+
 dynamic_examples
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Reusable Data
+
 fixtures
 builders
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Secrets
+
 secrets
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Integration
+
 tags
 hooks
-configuration
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Reference
+
 api
 migration
 cookbook
