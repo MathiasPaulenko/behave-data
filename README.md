@@ -1,10 +1,14 @@
 # behave-data
 
+[![Documentation](https://img.shields.io/badge/docs-mathiaspaulenko.github.io%2Fbehave--data-blue)](https://mathiaspaulenko.github.io/behave-data/)
+
 **Data management for [Behave](https://github.com/behave/behave) BDD framework.**
 
 Typed data tables, readable diffs, dynamic Examples from external sources, reusable fixtures & builders, secret resolution with masking, and declarative tags — all with zero boilerplate in your `environment.py`.
 
 Built on top of [behave-tables](https://github.com/MathiasPaulenko/behave-tables) for table manipulation.
+
+📚 **Full documentation:** [https://mathiaspaulenko.github.io/behave-data/](https://mathiaspaulenko.github.io/behave-data/)
 
 ## Features
 
