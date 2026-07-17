@@ -1,44 +1,42 @@
 # API Reference
 
+Quick reference with copy-pasteable examples.
+
 ## typed_wrap
 
 ```python
 from behave_data import typed_wrap
 
-typed_wrap(table, config=None)
+products = typed_wrap(context.table).typed_dicts()
 ```
-
-Wraps a Behave `Table` in `TypedTableWrapper`.
 
 - `table`: a `behave.model.Table` or any `TableLike` object.
 - `config`: optional `Config` instance.
-
-Returns a `TypedTableWrapper`.
+- Returns a `TypedTableWrapper`.
 
 ## raw_table
 
 ```python
 from behave_data import raw_table
 
-raw_table(table)
+raw = raw_table(context.table)
+for row in raw.rows:
+    print(row)
 ```
-
-Wraps a table in `RawTable` for header-included access.
 
 ## TypedTableWrapper
 
 ```python
 from behave_data import TypedTableWrapper
 
-wrapper = TypedTableWrapper(table, config)
+wrapper = TypedTableWrapper(context.table)
+
+dicts = wrapper.typed_dicts()
+objects = wrapper.typed_objects(Product)
+headers = wrapper.clean_headers()
 ```
 
-Methods:
-
-- `typed_dicts()` → `list[dict[str, Any]]`
-- `typed_objects(cls)` → `list[T]`
-- `clean_headers()` → `list[str]`
-- All `behave-tables` `TableWrapper` methods.
+Also inherits all `behave-tables` methods: `as_dicts()`, `as_models()`, `transpose()`, `to_csv()`, etc.
 
 ## DataManager
 
@@ -51,56 +49,72 @@ dm = DataManager(Config())
 ### fixture
 
 ```python
-dm.fixture(name, **overrides)
+admin = dm.fixture("admin_user")
+admin = dm.fixture("admin_user", email="override@example.com")
 ```
-
-Get fixture data with optional overrides.
 
 ### build
 
 ```python
-dm.build(name, count=1, overrides=None)
+product = dm.build("product")
+products = dm.build("product", count=3)
+product = dm.build("product", overrides={"name": "Gadget"})
 ```
-
-Build data. Returns a list if `count > 1`, otherwise a single dict.
 
 ### resolve
 
 ```python
-dm.resolve(value)
+token = dm.resolve("env:API_TOKEN")
+token = dm.resolve("file:secrets/token.txt")
+token = dm.resolve("secret:API_TOKEN")
 ```
-
-Resolve a placeholder string. Non-string values pass through.
 
 ### mask
 
 ```python
-dm.mask(value)
+token = dm.resolve("secret:API_TOKEN")
+print(dm.mask(token))  # ***
 ```
-
-Return `"***"` if `value` is a resolved secret, else original value.
 
 ## FixtureRegistry
 
 ```python
-from behave_data import FixtureRegistry, data_fixture
+from behave_data import FixtureRegistry
 
 registry = FixtureRegistry()
 registry.register("user", lambda: {"name": "Alice"})
+user = registry.get("user")
 ```
 
-`@data_fixture(name, scope="scenario", params=None)` decorator registers a fixture in the global registry.
+`@data_fixture(name, scope="scenario", params=None)` registers a fixture globally:
+
+```python
+from behave_data import data_fixture
+
+@data_fixture("user")
+def user():
+    return {"name": "Alice"}
+```
 
 ## BuilderRegistry
 
 ```python
-from behave_data import BuilderRegistry, data_builder
+from behave_data import BuilderRegistry
 
 registry = BuilderRegistry()
 registry.register("product", lambda o: {"name": "Widget", **o})
+product = registry.build("product")
 ```
 
-`@data_builder(name)` decorator registers a builder.
+`@data_builder(name)` registers a builder globally:
+
+```python
+from behave_data import data_builder
+
+@data_builder("product")
+def product(overrides):
+    return {"name": "Widget", **overrides}
+```
 
 ## Config
 
@@ -116,20 +130,21 @@ config = Config.from_file("behave_data.yml")
 ```python
 from behave_data import diff
 
-diff(expected, actual, ordered=True, ignore_columns=None, surplus_columns=True)
+diff(context.expected_table, context.actual_table)
+diff(context.expected_table, context.actual_table, ordered=False)
+diff(context.expected_table, context.actual_table, ignore_columns=["id"])
 ```
-
-Raises `TableDiffError` if tables differ.
 
 ## resolve_placeholder
 
+Low-level placeholder resolution. Normally you use `DataManager.resolve()`.
+
 ```python
-from behave_data import resolve_placeholder
+from behave_data import resolve_placeholder, Config
 
-resolve_placeholder(value, config, manager=None)
+cfg = Config(secret_path="secrets/")
+value = resolve_placeholder("env:API_TOKEN", cfg)
 ```
-
-Resolve `env:`, `file:`, `secret:`, `ref:` placeholders.
 
 ## register_type
 
@@ -139,7 +154,12 @@ from behave_data import register_type
 register_type("upper", lambda v: v.upper())
 ```
 
-Register a custom type converter for typed table headers.
+Then use in tables:
+
+```gherkin
+| code:upper |
+| abc        |
+```
 
 ## Hooks
 
@@ -151,6 +171,25 @@ from behave_data import (
     before_step_hook,
     after_scenario_hook,
 )
+```
+
+Typical `environment.py`:
+
+```python
+def before_all(context):
+    setup_data(context)
+
+def before_feature(context, feature):
+    before_feature_hook(context, feature)
+
+def before_scenario(context, scenario):
+    before_scenario_hook(context, scenario)
+
+def before_step(context, step):
+    before_step_hook(context, step)
+
+def after_scenario(context, scenario):
+    after_scenario_hook(context, scenario)
 ```
 
 ## Exceptions

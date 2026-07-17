@@ -55,28 +55,39 @@ Mark a scenario for cleanup after it runs:
 
 ```gherkin
 @cleanup_after
-Scenario: Create temporary file
-  Given I create a temp file
-  Then it exists
+Feature: Temporary files
+
+  Scenario: Create and clean temporary file
+    Given I create a temp file
+    Then the temp file exists
 ```
 
-Register cleanup in `environment.py` or a step:
+Register cleanup inside a step:
 
 ```python
+import os
+import tempfile
+
+from behave import given, then
+
+
 @given("I create a temp file")
 def step_create_temp(context):
-    import tempfile
     context.temp_file = tempfile.NamedTemporaryFile(delete=False)
 
     def cleanup(c):
         c.temp_file.close()
-        import os
         os.unlink(c.temp_file.name)
 
     context._behave_data_cleanup_funcs.append(cleanup)
+
+
+@then("the temp file exists")
+def step_temp_exists(context):
+    assert os.path.exists(context.temp_file.name)
 ```
 
-`after_scenario_hook` will run all cleanup functions.
+`after_scenario_hook` runs every function in `context._behave_data_cleanup_funcs`, even if the scenario fails. Functions can take `context` or no arguments.
 
 ## Feature-level tags
 

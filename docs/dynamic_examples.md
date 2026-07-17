@@ -4,7 +4,7 @@ Replace static `Examples` blocks with data from CSV, JSON, YAML, Excel, SQL, or 
 
 ## Basic syntax
 
-Use the `@load_examples:` tag on a `Scenario Outline`:
+Tag a `Scenario Outline` with `@load_examples:<source>`. You still need an empty `Examples:` block; behave-data replaces its rows at runtime.
 
 ```gherkin
 @load_examples:csv:features/data/users.csv
@@ -16,7 +16,7 @@ Scenario Outline: Create user
     | placeholder | placeholder |
 ```
 
-The static `Examples` block is replaced at runtime by the CSV content.
+The columns `name` and `email` come from the CSV headers.
 
 ## CSV file
 
@@ -29,14 +29,9 @@ bob,bob@example.com
 carol,carol@example.com
 ```
 
-Result: the scenario runs 3 times, once per row.
+Result: the scenario runs 3 times, once per row, with `<name>` and `<email>` replaced.
 
 ## JSON file
-
-```gherkin
-@load_examples:json:features/data/users.json
-Scenario Outline: Create user
-```
 
 `features/data/users.json`:
 
@@ -47,11 +42,36 @@ Scenario Outline: Create user
 ]
 ```
 
+Feature:
+
+```gherkin
+@load_examples:json:features/data/users.json
+Scenario Outline: Create user
+  Given I have a user with name "<name>" and email "<email>"
+
+  Examples:
+    | placeholder | placeholder |
+```
+
 ## YAML file
+
+`features/data/users.yaml`:
+
+```yaml
+- name: alice
+  email: alice@example.com
+- name: bob
+  email: bob@example.com
+```
+
+Feature:
 
 ```gherkin
 @load_examples:yaml:features/data/users.yaml
 Scenario Outline: Create user
+
+  Examples:
+    | placeholder | placeholder |
 ```
 
 Requires `pip install behave-data[yaml]`.
@@ -61,6 +81,9 @@ Requires `pip install behave-data[yaml]`.
 ```gherkin
 @load_examples:excel:features/data/users.xlsx
 Scenario Outline: Create user
+
+  Examples:
+    | placeholder | placeholder |
 ```
 
 Requires `pip install behave-data[excel]`.
@@ -70,6 +93,9 @@ Requires `pip install behave-data[excel]`.
 ```gherkin
 @load_examples:sql:SELECT name, email FROM users
 Scenario Outline: Create user
+
+  Examples:
+    | placeholder | placeholder |
 ```
 
 Requires `pip install behave-data[sql]` and a configured connection.
@@ -79,6 +105,9 @@ Requires `pip install behave-data[sql]` and a configured connection.
 ```gherkin
 @load_examples:http:https://api.example.com/users
 Scenario Outline: Create user
+
+  Examples:
+    | placeholder | placeholder |
 ```
 
 Requires `pip install behave-data[http]`.
@@ -99,15 +128,15 @@ Then use:
 
 ## Supported formats
 
-| Schema   | Description               | Extra    |
-|----------|---------------------------|----------|
-| `csv:`   | Comma-separated values    | —        |
-| `json:`  | JSON array of objects     | —        |
-| `yaml:`  | YAML list or dict         | `[yaml]` |
-| `excel:` | Excel `.xlsx` file        | `[excel]` |
-| `sql:`   | SQL SELECT query          | `[sql]`  |
-| `http:`  | HTTP GET returning JSON   | `[http]` |
+| Schema   | Description             | Extra     |
+|----------|-------------------------|-----------|
+| `csv:`   | Comma-separated values  | —         |
+| `json:`  | JSON array of objects   | —         |
+| `yaml:`  | YAML list or dict       | `[yaml]`  |
+| `excel:` | Excel `.xlsx` file      | `[excel]` |
+| `sql:`   | SQL SELECT query        | `[sql]`   |
+| `http:`  | HTTP GET returning JSON | `[http]`  |
 
 ## How it works
 
-`before_feature_hook` scans the feature for `@load_examples:` tags. When found, it loads the data and replaces the `Examples` table rows before the scenario outline runs.
+`before_feature_hook` scans every `Scenario Outline` for `@load_examples:` tags. When found, it loads the data and replaces the rows inside the `Examples` block before the outline runs.

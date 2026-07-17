@@ -4,6 +4,8 @@ Fixtures are reusable data recipes. Register them once, use them everywhere.
 
 ## Basic fixture
 
+Register fixtures in `features/environment.py` (or any module imported before `setup_data` runs):
+
 ```python
 # features/environment.py
 from behave_data import data_fixture
@@ -30,10 +32,23 @@ Scenario: Admin can access dashboard
 In the step:
 
 ```python
+from behave import given, then
+
 @given("I am logged in as admin")
 def step_admin_login(context):
     user = context.admin_user
     assert user["role"] == "admin"
+
+
+@then("I see the admin dashboard")
+def step_see_dashboard(context):
+    assert context.admin_user["role"] == "admin"
+```
+
+You can also retrieve the fixture manually:
+
+```python
+user = context.data.fixture("admin_user")
 ```
 
 ## Manual registration
@@ -48,7 +63,7 @@ user = dm.fixture("guest")
 
 ## Nested fixtures with ref
 
-Reference another fixture inside a fixture:
+Reference another fixture inside a fixture using `ref:<name>`:
 
 ```python
 @data_fixture("address")
@@ -64,10 +79,11 @@ def user_with_address():
     }
 ```
 
-Result:
+Retrieve it:
 
 ```python
-context.user_with_address == {
+user = context.data.fixture("user_with_address")
+assert user == {
     "name": "Alice",
     "address": {"street": "123 Main St", "city": "NYC"},
 }
@@ -81,13 +97,29 @@ def regular_user(name):
     return {"name": name, "role": "user"}
 ```
 
-Use the param variant:
+Each parameter is registered as a separate fixture name: `regular_user:alice`, `regular_user:bob`.
+
+Use it in a feature:
 
 ```gherkin
 @needs_data:regular_user:alice
 Scenario: Alice logs in
   Given I am logged in
   Then my name is "alice"
+```
+
+In the step:
+
+```python
+@then('my name is "alice"')
+def step_name_is_alice(context):
+    assert context.regular_user_alice["name"] == "alice"
+```
+
+Or retrieve manually:
+
+```python
+user = context.data.fixture("regular_user:alice")
 ```
 
 ## Fixture overrides

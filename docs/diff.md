@@ -1,10 +1,10 @@
 # Table Diff
 
-Compare expected vs actual tables with readable output.
+Compare expected vs actual tables with readable, Cucumber-style output.
+
+`diff()` always raises `TableDiffError` when the tables differ. If you want to check whether they match without raising, catch the exception.
 
 ## Basic diff
-
-In your step definitions:
 
 ```python
 from behave_data import diff, TableDiffError
@@ -14,32 +14,29 @@ def step_actual_matches(context):
     diff(context.expected_table, context.actual_table)
 ```
 
-If tables differ, `diff` raises `TableDiffError` with output like:
+If tables differ, the raised `TableDiffError` contains output similar to:
 
 ```text
-Expected | Actual
-  name   | name
-- Alice  | + Bob
+Tables were not identical:
+      - | Alice | 30 |
+      + | Bob | 30 |
 ```
 
-## Diff with raise_on_diff behavior
-
-`diff()` raises on mismatch. If you want to check the result instead, catch the exception:
+## Check diff without failing
 
 ```python
 from behave_data import diff, TableDiffError
 
+@then("the tables match")
 def step_check_diff(context):
     try:
         diff(context.expected_table, context.actual_table)
-        return True
-    except TableDiffError:
-        return False
+    except TableDiffError as exc:
+        print("Tables differ:", exc)
+        raise
 ```
 
 ## Ignore columns
-
-Ignore one or more columns from comparison:
 
 ```python
 diff(
@@ -50,8 +47,6 @@ diff(
 ```
 
 ## Unordered comparison
-
-Rows can be in any order:
 
 ```python
 diff(context.expected_table, context.actual_table, ordered=False)
@@ -72,11 +67,11 @@ Feature: Table comparison
 
   Scenario: Prices should match
     Given an expected price list
-      | name  | price |
-      | Apple | 1.50  |
+      | name:str | price:float |
+      | Apple    | 1.50        |
     When the actual price list is
-      | name  | price |
-      | Apple | 1.50  |
+      | name:str | price:float |
+      | Apple    | 1.50        |
     Then the prices should match
 ```
 
@@ -98,9 +93,11 @@ def step_match(context):
 
 ## Diff with list of dicts
 
-Actual can also be a list of dicts:
+`actual` can be a `list[dict]`, a single `dict`, or a table-like object. `list[list]` is **not** supported because headers are required.
 
 ```python
+from behave_data import diff
+
 expected = context.table
 actual = [
     {"name": "Apple", "price": "1.50"},
@@ -108,8 +105,11 @@ actual = [
 diff(expected, actual)
 ```
 
-## Diff empty tables
+## Diff an empty table
 
 ```python
-diff([["name"]], [])
+from behave_data import diff
+
+# actual is an empty list of dicts with expected headers
+diff(context.expected_table, [])
 ```

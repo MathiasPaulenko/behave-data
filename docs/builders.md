@@ -51,17 +51,29 @@ products = context.data.build("product", count=3)
 
 ## Derived fields
 
-Use previous overrides inside the builder:
+Start from the overrides, apply defaults, then derive other fields:
 
 ```python
 @data_builder("user")
 def user(overrides):
-    base = {
-        "first_name": "Alice",
-        "last_name": "Smith",
+    first_name = overrides.get("first_name", "Alice")
+    last_name = overrides.get("last_name", "Smith")
+    return {
+        "first_name": first_name,
+        "last_name": last_name,
+        "full_name": f"{first_name} {last_name}",
+        "role": overrides.get("role", "user"),
     }
-    base["full_name"] = f"{base['first_name']} {base['last_name']}"
-    return {**base, **overrides}
+```
+
+Use it:
+
+```python
+user = context.data.build(
+    "user",
+    overrides={"first_name": "Bob", "role": "admin"},
+)
+# {"first_name": "Bob", "last_name": "Smith", "full_name": "Bob Smith", "role": "admin"}
 ```
 
 ## Manual registration

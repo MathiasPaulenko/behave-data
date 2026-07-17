@@ -127,5 +127,7 @@ hooks
 configuration
 api
 migration
+cookbook
+troubleshooting
 changelog
 ```

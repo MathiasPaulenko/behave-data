@@ -75,15 +75,18 @@ Runs cleanup functions registered via `@cleanup_after` or `_behave_data_cleanup_
 
 ## Placeholder resolution in steps
 
-If you have a fixture:
+Placeholders use **attribute access** (`{obj.attr}`). The fixture must return an object with attributes, or you can attach a dict to the context and use `SimpleNamespace`:
 
 ```python
+from types import SimpleNamespace
+from behave_data import data_fixture
+
 @data_fixture("user")
 def user():
-    return {"name": "Alice", "email": "alice@example.com"}
+    return SimpleNamespace(name="Alice", email="alice@example.com")
 ```
 
-And a scenario:
+Feature:
 
 ```gherkin
 @needs_data:user
@@ -92,6 +95,16 @@ Scenario: Send email
 ```
 
 The step text becomes `I send email to alice@example.com` before matching.
+
+Placeholders also work inside table cells:
+
+```gherkin
+@needs_data:user
+Scenario: Email via table
+  Given a recipient table
+    | email          |
+    | {user.email}   |
+```
 
 ## Manual hook usage
 

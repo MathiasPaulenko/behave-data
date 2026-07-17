@@ -1,6 +1,6 @@
 # Null Handling
 
-By default, behave-data converts common null markers to Python `None`. This means empty cells stop being empty strings.
+By default, behave-data converts common null markers to Python `None`. Empty cells stop being empty strings.
 
 ## Default null markers
 
@@ -30,9 +30,9 @@ Result:
 ]
 ```
 
-## Configuring null markers
+## Configuring global null markers
 
-Create `behave_data.yml`:
+Use `behave_data.yml`:
 
 ```yaml
 null_markers:
@@ -53,14 +53,36 @@ config = Config(null_markers={"", "null", "nil", "-"})
 context.users = typed_wrap(context.table, config).typed_dicts()
 ```
 
-## Per-column override
+## Per-column null markers
 
-You can override markers per header using the `null` marker syntax in the column name. For more control, create a `Config` and pass it to `typed_wrap`:
+You can define different null markers for specific columns. This is useful when one column uses `-` for "not applicable" but another uses it as a real value.
+
+In `behave_data.yml`:
+
+```yaml
+null_markers:
+  - ""
+  - "null"
+  - "None"
+
+null_markers_by_column:
+  age:
+    - ""
+    - "N/A"
+    - "unknown"
+```
+
+In code:
 
 ```python
 from behave_data import Config
 
-config = Config(null_markers=frozenset({"", "N/A", "missing"}))
+config = Config(
+    null_markers={"", "null", "None"},
+    null_markers_by_column={
+        "age": {"", "N/A", "unknown"},
+    },
+)
 ```
 
 ## API

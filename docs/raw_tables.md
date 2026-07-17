@@ -1,12 +1,12 @@
 # Raw Tables
 
-Sometimes a Behave table has no header, or you want to treat the header as data. `RawTable` gives you full access to all rows.
+Sometimes a Behave table has no header, or you want to treat the first row as data too. `RawTable` gives you full access to **all rows** as a plain matrix of strings.
 
 ## When to use
 
-- Tables verticales.
-- Tablas donde la primera fila también es dato.
-- Necesitas acceder a celdas como matriz de strings.
+- Vertical tables where the first column is a label.
+- Tables without a header row.
+- Any time you need the raw cell matrix before typed conversion.
 
 ## Basic example
 
@@ -19,20 +19,18 @@ Scenario: Raw matrix
 ```
 
 ```python
-from behave_data import RawTable
+from behave_data import RawTable, raw_table
 
 @given("a raw table")
 def step_raw(context):
-    context.raw = RawTable(context.table)
+    context.raw = raw_table(context.table)
 ```
 
-`context.raw.rows` returns:
+`context.raw.rows` returns every row, including the header:
 
 ```python
 [["col1", "col2"], ["a", "b"], ["c", "d"]]
 ```
-
-The first row is the header, followed by all data rows.
 
 ## Access rows
 
@@ -49,11 +47,32 @@ context.raw[0]  # ["col1", "col2"]
 context.raw[1]  # ["a", "b"]
 ```
 
-## to_dicts with custom headers
+## Convert with custom headers
+
+Use `to_dicts()` when you want to name the columns yourself:
 
 ```python
 context.raw.to_dicts(["x", "y"])
 # [{"x": "a", "y": "b"}, {"x": "c", "y": "d"}]
+```
+
+## Raw table without header
+
+```gherkin
+Scenario: No header
+  Given a raw table
+    | 2024-01-15 | 100 |
+    | 2024-06-30 | 200 |
+```
+
+```python
+@given("a raw table")
+def step_raw(context):
+    raw = raw_table(context.table)
+    assert raw.rows == [
+        ["2024-01-15", "100"],
+        ["2024-06-30", "200"],
+    ]
 ```
 
 ## Comparison
@@ -61,6 +80,8 @@ context.raw.to_dicts(["x", "y"])
 `RawTable` supports equality comparison:
 
 ```python
+from behave_data import RawTable
+
 table1 = RawTable(context.table1)
 table2 = RawTable(context.table2)
 assert table1 == table2
