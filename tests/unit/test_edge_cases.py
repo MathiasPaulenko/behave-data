@@ -728,3 +728,19 @@ class TestCsvLoaderNewline:
         assert len(result) == 2
         assert result[0]["name"] == "Alice"
         assert result[1]["age"] == "25"
+
+
+class TestLoaderEmptyPathAfterSchema:
+    """Regression: load() with empty path after schema prefix must raise ValueError."""
+
+    def test_csv_empty_path_raises(self) -> None:
+        with pytest.raises(ValueError, match="cannot be empty"):
+            load("csv:", Config())
+
+    def test_json_empty_path_raises(self) -> None:
+        with pytest.raises(ValueError, match="cannot be empty"):
+            load("json:", Config())
+
+    def test_yaml_empty_path_raises(self) -> None:
+        with pytest.raises(ValueError, match="cannot be empty"):
+            load("yaml:", Config())

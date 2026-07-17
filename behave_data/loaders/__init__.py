@@ -104,6 +104,9 @@ def load(source: str, config: Config | None = None) -> list[dict[str, Any]]:
     else:
         path = source
 
+    if not path.strip():
+        raise ValueError(f"Source path cannot be empty after schema prefix: {source!r}")
+
     if schema not in ("sql", "http"):
         path = _resolve_path(path, cfg)
 
