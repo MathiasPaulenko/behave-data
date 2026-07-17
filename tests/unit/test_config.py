@@ -243,3 +243,31 @@ class TestFromUserdata:
         cfg = Config.from_userdata({"other_lib.foo": "bar", "behave_data.secret_backend": "env"})
         assert cfg.secret_backend == "env"
         assert not hasattr(cfg, "foo")
+
+
+class TestFromDictEdgeCases:
+    """Regression: from_dict must handle string, None, and invalid types for markers."""
+
+    def test_null_markers_as_string_splits_by_comma(self) -> None:
+        cfg = Config.from_dict({"null_markers": "null,None,N/A"})
+        assert cfg.null_markers == frozenset({"null", "None", "N/A"})
+
+    def test_null_markers_as_none_returns_empty_frozenset(self) -> None:
+        cfg = Config.from_dict({"null_markers": None})
+        assert cfg.null_markers == frozenset()
+
+    def test_null_markers_as_int_raises_type_error(self) -> None:
+        with pytest.raises(TypeError, match="must be a list or string"):
+            Config.from_dict({"null_markers": 42})
+
+    def test_null_markers_by_column_string_markers(self) -> None:
+        cfg = Config.from_dict({"null_markers_by_column": {"phone": "N/A,null"}})
+        assert cfg.null_markers_by_column["phone"] == frozenset({"N/A", "null"})
+
+    def test_null_markers_by_column_none_markers(self) -> None:
+        cfg = Config.from_dict({"null_markers_by_column": {"phone": None}})
+        assert cfg.null_markers_by_column["phone"] == frozenset()
+
+    def test_null_markers_by_column_invalid_type_raises(self) -> None:
+        with pytest.raises(TypeError, match="must be a list or string"):
+            Config.from_dict({"null_markers_by_column": {"phone": 42}})

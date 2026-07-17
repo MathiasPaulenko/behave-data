@@ -68,23 +68,30 @@ class Config:
 
         if "null_markers" in filtered:
             val = filtered["null_markers"]
-            if isinstance(val, list):
+            if isinstance(val, str):
+                val = [m.strip() for m in val.split(",")]
+            if val is None:
+                filtered["null_markers"] = frozenset()
+            elif isinstance(val, (list, frozenset, set, tuple)):
                 filtered["null_markers"] = frozenset(_stringify_marker(m) for m in val)
-            elif isinstance(val, frozenset):
-                filtered["null_markers"] = val
             else:
-                filtered["null_markers"] = frozenset(_stringify_marker(m) for m in val)
+                raise TypeError(f"null_markers must be a list or string, got {type(val).__name__}")
 
         if "null_markers_by_column" in filtered:
             raw = filtered["null_markers_by_column"]
             converted: dict[str, frozenset[str]] = {}
             for col, markers in raw.items():
-                if isinstance(markers, list):
+                if isinstance(markers, str):
+                    markers = [m.strip() for m in markers.split(",")]
+                if markers is None:
+                    converted[col] = frozenset()
+                elif isinstance(markers, (list, frozenset, set, tuple)):
                     converted[col] = frozenset(_stringify_marker(m) for m in markers)
-                elif isinstance(markers, frozenset):
-                    converted[col] = markers
                 else:
-                    converted[col] = frozenset(_stringify_marker(m) for m in markers)
+                    raise TypeError(
+                        f"null_markers_by_column[{col!r}] must be a list or string, "
+                        f"got {type(markers).__name__}"
+                    )
             filtered["null_markers_by_column"] = converted
 
         return cls(**filtered)
