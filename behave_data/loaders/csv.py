@@ -21,6 +21,6 @@ class CsvLoader:
         Returns:
             List of dicts, one per row. Empty list if file is empty.
         """
-        with open(source, encoding="utf-8") as f:
+        with open(source, encoding="utf-8", newline="") as f:
             reader = csv.DictReader(f)
             return list(reader)

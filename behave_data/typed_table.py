@@ -58,7 +58,7 @@ class TypedTableWrapper(TableWrapper):
         for row in self._rows:
             typed_row: dict[str, Any] = {}
             for header in self.headers:
-                clean_name, converter, nullable = parse_column_header(header)
+                clean_name, converter, _nullable = parse_column_header(header)
                 raw_value = row.get(header, "")
                 col_markers = get_column_markers(clean_name, cfg)
                 resolved = resolve_null(raw_value, cfg.null_markers, col_markers)

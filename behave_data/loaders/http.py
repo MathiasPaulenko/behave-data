@@ -37,6 +37,8 @@ class HttpLoader:
             ) from None
 
         parts = source.strip().split(None, 1)
+        if not parts or not parts[0]:
+            raise ValueError("HTTP source cannot be empty")
         if len(parts) == 2:
             method, url = parts
         else:
@@ -55,6 +57,11 @@ class HttpLoader:
         data = response.json()
 
         if isinstance(data, list):
+            for item in data:
+                if not isinstance(item, dict):
+                    raise ValueError(
+                        f"HTTP response list items must be dicts, got {type(item).__name__}"
+                    )
             return data
         if isinstance(data, dict):
             return [data]

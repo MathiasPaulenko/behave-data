@@ -678,3 +678,53 @@ class TestJsonLoaderNonDictItems:
         f.write_text(json_mod.dumps(["a", "b"]), encoding="utf-8")
         with pytest.raises(ValueError, match="must be dicts"):
             JsonLoader().load(str(f), Config())
+
+
+class TestYamlLoaderNonDictItems:
+    """Regression: YAML list with non-dict items must raise ValueError."""
+
+    def test_yaml_list_with_integers_raises(self, tmp_path: Path) -> None:
+        from behave_data.loaders.yaml import YamlLoader
+
+        f = tmp_path / "data.yaml"
+        f.write_text("- 1\n- 2\n- 3\n", encoding="utf-8")
+        with pytest.raises(ValueError, match="must be dicts"):
+            YamlLoader().load(str(f), Config())
+
+    def test_yaml_list_with_strings_raises(self, tmp_path: Path) -> None:
+        from behave_data.loaders.yaml import YamlLoader
+
+        f = tmp_path / "data.yaml"
+        f.write_text("- hello\n- world\n", encoding="utf-8")
+        with pytest.raises(ValueError, match="must be dicts"):
+            YamlLoader().load(str(f), Config())
+
+
+class TestHttpLoaderEmptySource:
+    """Regression: HTTP loader with empty source must raise ValueError."""
+
+    def test_empty_source_raises(self) -> None:
+        from behave_data.loaders.http import HttpLoader
+
+        with pytest.raises(ValueError, match="cannot be empty"):
+            HttpLoader().load("", Config())
+
+    def test_whitespace_source_raises(self) -> None:
+        from behave_data.loaders.http import HttpLoader
+
+        with pytest.raises(ValueError, match="cannot be empty"):
+            HttpLoader().load("   ", Config())
+
+
+class TestCsvLoaderNewline:
+    """Regression: CSV loader must use newline='' to avoid blank lines on Windows."""
+
+    def test_csv_loads_correctly_with_newline(self, tmp_path: Path) -> None:
+        from behave_data.loaders.csv import CsvLoader
+
+        f = tmp_path / "data.csv"
+        f.write_text("name,age\nAlice,30\nBob,25\n", encoding="utf-8", newline="")
+        result = CsvLoader().load(str(f), Config())
+        assert len(result) == 2
+        assert result[0]["name"] == "Alice"
+        assert result[1]["age"] == "25"
