@@ -156,7 +156,6 @@ hooks
 :caption: Reference
 
 api
-migration
 cookbook
 troubleshooting
 changelog
