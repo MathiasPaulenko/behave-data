@@ -38,7 +38,7 @@ from behave_data.tags import process_tags_after_scenario, process_tags_before_sc
 from behave_data.typed_table import TypedTableWrapper, typed_wrap
 from behave_data.types import TYPE_CONVERTERS, convert_cell, parse_column_header, register_type
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "BehaveDataError",
