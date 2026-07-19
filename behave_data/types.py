@@ -10,12 +10,19 @@ from typing import Any
 
 from behave_data.errors import TypeConversionError
 
-ConverterFn = Callable[[str], Any]
+ConverterFn = Callable[[Any], Any]
 
 
-def _parse_bool(value: str) -> bool:
-    """Parse a string to bool, accepting common true/false representations."""
-    lowered = value.strip().lower()
+def _parse_bool(value: Any) -> bool:
+    """Parse a value to bool.
+
+    Accepts native bools, numeric 0/1, and common string representations.
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and value in (0, 1):
+        return bool(value)
+    lowered = str(value).strip().lower()
     if lowered in ("true", "yes", "1", "on"):
         return True
     if lowered in ("false", "no", "0", "off"):
@@ -23,24 +30,34 @@ def _parse_bool(value: str) -> bool:
     raise ValueError(f"Cannot parse {value!r} as bool")
 
 
-def _parse_date(value: str) -> date:
-    """Parse a string to date (ISO format: YYYY-MM-DD)."""
-    return date.fromisoformat(value.strip())
+def _parse_date(value: Any) -> date:
+    """Parse a value to date (ISO format: YYYY-MM-DD)."""
+    if isinstance(value, date):
+        return value.date() if isinstance(value, datetime) else value
+    return date.fromisoformat(str(value).strip())
 
 
-def _parse_datetime(value: str) -> datetime:
-    """Parse a string to datetime (ISO format)."""
-    return datetime.fromisoformat(value.strip())
+def _parse_datetime(value: Any) -> datetime:
+    """Parse a value to datetime (ISO format)."""
+    if isinstance(value, datetime):
+        return value
+    if isinstance(value, date):
+        return datetime.combine(value, datetime.min.time())
+    return datetime.fromisoformat(str(value).strip())
 
 
-def _parse_uuid(value: str) -> uuid.UUID:
-    """Parse a string to UUID."""
-    return uuid.UUID(value.strip())
+def _parse_uuid(value: Any) -> uuid.UUID:
+    """Parse a value to UUID."""
+    if isinstance(value, uuid.UUID):
+        return value
+    return uuid.UUID(str(value).strip())
 
 
-def _parse_json(value: str) -> Any:
-    """Parse a string as JSON."""
-    return json.loads(value)
+def _parse_json(value: Any) -> Any:
+    """Parse a string as JSON, or return already-parsed data unchanged."""
+    if isinstance(value, str):
+        return json.loads(value)
+    return value
 
 
 TYPE_CONVERTERS: dict[str, ConverterFn] = {
@@ -90,14 +107,16 @@ def parse_column_header(header: str) -> tuple[str, ConverterFn | None, bool]:
         return header, None, False
 
     name, type_part = header.rsplit(":", 1)
+    name = name.strip()
+    type_part = type_part.strip()
 
     nullable = False
     if type_part.endswith("?"):
         nullable = True
-        type_part = type_part[:-1]
+        type_part = type_part[:-1].strip()
 
     if type_part == "":
-        return name, None, False
+        return name, None, nullable
 
     converter = TYPE_CONVERTERS.get(type_part)
     if converter is None:
@@ -107,7 +126,7 @@ def parse_column_header(header: str) -> tuple[str, ConverterFn | None, bool]:
 
 
 def convert_cell(
-    value: str,
+    value: Any,
     converter: ConverterFn | None,
     column_name: str = "",
     type_name: str = "",
@@ -115,7 +134,7 @@ def convert_cell(
     """Convert a cell value using the given converter.
 
     Args:
-        value: The string value to convert.
+        value: The cell value to convert.
         converter: The converter callable, or None to return value unchanged.
         column_name: The column name for error reporting.
         type_name: The type name for error reporting.

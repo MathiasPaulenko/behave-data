@@ -20,7 +20,7 @@ def get_column_markers(column_name: str, config: Config) -> frozenset[str] | Non
 
 
 def is_null(
-    value: str,
+    value: object,
     markers: frozenset[str] | None = None,
     column_markers: frozenset[str] | None = None,
 ) -> bool:
@@ -29,7 +29,7 @@ def is_null(
     Priority: ``column_markers`` > ``markers`` > ``DEFAULT_NULL_MARKERS``.
 
     Args:
-        value: The string value to check.
+        value: The cell value to check.
         markers: Global null markers. If None, defaults are used.
         column_markers: Per-column markers that override global markers.
 
@@ -44,16 +44,16 @@ def is_null(
 
 
 def resolve_null(
-    value: str,
+    value: object,
     markers: frozenset[str] | None = None,
     column_markers: frozenset[str] | None = None,
-) -> str | None:
+) -> object | None:
     """Resolve a null marker to None, or return the value unchanged.
 
     Priority: ``column_markers`` > ``markers`` > ``DEFAULT_NULL_MARKERS``.
 
     Args:
-        value: The string value to resolve.
+        value: The cell value to resolve.
         markers: Global null markers. If None, defaults are used.
         column_markers: Per-column markers that override global markers.
 

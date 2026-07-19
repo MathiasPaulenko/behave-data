@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import patch
 
 from behave_data.config import Config
 from behave_data.examples import (
@@ -73,6 +74,12 @@ class TestFindLoadTag:
         scenario = FakeScenario(tags=["@load_examples:csv:scenario.csv"], feature=feature)
         assert _find_load_tag(scenario) == "csv:scenario.csv"
 
+    def test_empty_source_returns_empty_string(self) -> None:
+        """Regression: @load_examples: with no source should not be silently ignored."""
+        scenario = FakeScenario(tags=["@load_examples:"])
+        result = _find_load_tag(scenario)
+        assert result == "", f"Expected empty string, got {result!r}"
+
 
 class TestReplaceExampleRows:
     def test_replace_with_data(self) -> None:
@@ -88,6 +95,26 @@ class TestReplaceExampleRows:
         example = FakeExamples(table)
         _replace_example_rows(example, [])
         assert example.table.rows == []
+        assert example.table.headings == []
+
+    def test_replace_with_none_values(self) -> None:
+        """Regression: JSON/YAML nulls must become empty cells, not "None"."""
+        table = FakeTable(["old"], [FakeRow(["old"])])
+        example = FakeExamples(table)
+        data = [{"name": "Alice", "city": None}]
+        _replace_example_rows(example, data)
+        assert example.table.headings == ["name", "city"]
+        assert example.table.rows[0].cells == ["Alice", ""]
+
+    def test_replace_without_behave_model(self) -> None:
+        """Fallback to _SimpleRow when behave.model is unavailable."""
+        table = FakeTable(["old"], [FakeRow(["old"])])
+        example = FakeExamples(table)
+        data = [{"name": "Alice", "age": "30"}]
+        with patch.dict("sys.modules", {"behave.model": None}):
+            _replace_example_rows(example, data)
+        assert example.table.headings == ["name", "age"]
+        assert example.table.rows[0].cells == ["Alice", "30"]
 
 
 class TestLoadExamplesForFeature:

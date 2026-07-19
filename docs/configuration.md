@@ -87,15 +87,15 @@ config = Config(
 
 ## Options
 
-| Userdata key              | YAML key                  | Default                      | Type             | Description                          |
-|---------------------------|---------------------------|------------------------------|------------------|--------------------------------------|
-| `behave_data.null_markers` | `null_markers`            | `{"", "null", "None", "N/A"}` | comma-separated | Values converted to `None`           |
-| `behave_data.null_markers_by_column` | `null_markers_by_column` | `{}`                         | JSON string      | Per-column null marker overrides     |
-| `behave_data.secret_backend` | `secret_backend`          | `"file"`                     | string           | Backend for `secret:` placeholders   |
-| `behave_data.secret_path` | `secret_path`             | `"secrets/"`                 | string           | Base path for `file:` secrets        |
-| `behave_data.load_base_dir` | `load_base_dir`           | `"features/data/"`           | string           | Base path for dynamic Examples       |
-| `behave_data.db_connections` | `db_connections`          | `{}`                         | JSON string      | Named database connection strings    |
-| `behave_data.type_overrides` | `type_overrides`          | `{}`                         | JSON string      | Per-column type overrides            |
+| `behave.ini` key                    | YAML key                 | Default                       | Type            | Description                         |
+|-------------------------------------|--------------------------|-------------------------------|-----------------|-------------------------------------|
+| `behave_data.null_markers`          | `null_markers`           | `{"", "null", "None", "N/A"}` | comma-separated | Values converted to `None`          |
+| `behave_data.null_markers_by_column`| `null_markers_by_column` | `{}`                          | JSON string     | Per-column null marker overrides    |
+| `behave_data.secret_backend`        | `secret_backend`         | `"file"`                      | string          | Backend for `secret:` placeholders  |
+| `behave_data.secret_path`           | `secret_path`            | `"secrets/"`                  | string          | Base path for `file:` secrets       |
+| `behave_data.load_base_dir`         | `load_base_dir`          | `"features/data/"`            | string          | Base path for dynamic Examples      |
+| `behave_data.db_connections`        | `db_connections`         | `{}`                          | JSON string     | Named database connection strings   |
+| `behave_data.type_overrides`        | `type_overrides`         | `{}`                          | JSON string     | Per-column type overrides           |
 
 ## Loading config manually
 

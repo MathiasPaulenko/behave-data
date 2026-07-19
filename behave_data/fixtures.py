@@ -19,7 +19,6 @@ class FixtureRegistry:
 
     def __init__(self) -> None:
         self._fixtures: dict[str, dict[str, Any]] = dict(_GLOBAL_FIXTURES)
-        _GLOBAL_FIXTURES.clear()
 
     def register(
         self, name: str, func: Callable[..., dict[str, Any]], scope: str = "scenario"
@@ -52,12 +51,14 @@ class FixtureRegistry:
         if name not in self._fixtures:
             raise FixtureNotFoundError(name)
         data = self._fixtures[name]["func"]()
+        if not isinstance(data, dict):
+            raise BehaveDataError(f"Fixture '{name}' must return a dict, got {type(data).__name__}")
         if overrides:
             data = {**data, **overrides}
         return self._resolve_refs(data, {name})
 
     def names(self) -> list[str]:
-        """Return list of registered fixture names."""
+        """Return the list of registered fixture names."""
         return list(self._fixtures.keys())
 
     def _resolve_refs(self, data: dict[str, Any], in_progress: set[str]) -> dict[str, Any]:
@@ -84,6 +85,10 @@ class FixtureRegistry:
                 if ref_name not in self._fixtures:
                     raise FixtureNotFoundError(ref_name)
                 ref_data = self._fixtures[ref_name]["func"]()
+                if not isinstance(ref_data, dict):
+                    raise BehaveDataError(
+                        f"Fixture '{ref_name}' must return a dict, got {type(ref_data).__name__}"
+                    )
                 ref_data = self._resolve_refs(ref_data, in_progress | {ref_name})
                 resolved[key] = ref_data
             else:

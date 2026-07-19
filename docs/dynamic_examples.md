@@ -128,14 +128,15 @@ Then use:
 
 ## Supported formats
 
-| Schema   | Description             | Extra     |
-|----------|-------------------------|-----------|
-| `csv:`   | Comma-separated values  | —         |
-| `json:`  | JSON array of objects   | —         |
-| `yaml:`  | YAML list or dict       | `[yaml]`  |
-| `excel:` | Excel `.xlsx` file      | `[excel]` |
-| `sql:`   | SQL SELECT query        | `[sql]`   |
-| `http:`  | HTTP GET returning JSON | `[http]`  |
+| Schema      | Description             | Extra     |
+|-------------|-------------------------|-----------|
+| `csv:`      | Comma-separated values  | —         |
+| `json:`     | JSON array of objects   | —         |
+| `yaml:`     | YAML list or dict       | `[yaml]`  |
+| `excel:`    | Excel `.xlsx` file      | `[excel]` |
+| `xlsx:`     | Alias for `excel:`      | `[excel]` |
+| `sql:`      | SQL SELECT query        | `[sql]`   |
+| `http:`     | HTTP GET returning JSON | `[http]`  |
 
 ## How it works
 

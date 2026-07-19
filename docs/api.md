@@ -162,6 +162,21 @@ Then use in tables:
 | abc        |
 ```
 
+## wrap and TableWrapper
+
+`behave-data` re-exports `wrap()` and `TableWrapper` from [behave-tables](https://github.com/MathiasPaulenko/behave-tables) for untyped table manipulation:
+
+```python
+from behave_data import wrap, TableWrapper
+
+wrapper = wrap(context.table)
+wrapper.as_dicts()
+wrapper.transpose()
+wrapper.to_csv()
+```
+
+Use `typed_wrap()` when you need automatic type conversion and null resolution.
+
 ## Hooks
 
 ```python

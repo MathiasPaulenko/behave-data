@@ -24,9 +24,11 @@ class JsonLoader:
         Raises:
             ValueError: If the JSON data is not a list or dict.
         """
-        with open(source, encoding="utf-8") as f:
+        with open(source, encoding="utf-8-sig") as f:
             data = json.load(f)
 
+        if data is None:
+            return []
         if isinstance(data, list):
             for item in data:
                 if not isinstance(item, dict):

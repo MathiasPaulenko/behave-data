@@ -33,7 +33,7 @@ class YamlLoader:
                 "pip install behave-data[yaml]",
             ) from None
 
-        with open(source, encoding="utf-8") as f:
+        with open(source, encoding="utf-8-sig") as f:
             data = yaml.safe_load(f)
 
         if isinstance(data, list):

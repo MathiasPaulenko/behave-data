@@ -8,6 +8,20 @@ from behave_data.config import Config
 from behave_data.manager import DataManager
 
 
+class TestInit:
+    def test_data_manager_accepts_config(self) -> None:
+        dm = DataManager(Config())
+        assert isinstance(dm.config, Config)
+
+    def test_data_manager_accepts_none(self) -> None:
+        dm = DataManager()
+        assert isinstance(dm.config, Config)
+
+    def test_data_manager_rejects_invalid_config(self) -> None:
+        with pytest.raises(TypeError, match="config must be a Config instance"):
+            DataManager({"secret_backend": "env"})  # type: ignore[arg-type]
+
+
 class TestResolve:
     def test_resolve_non_string(self) -> None:
         dm = DataManager()
@@ -37,7 +51,7 @@ class TestResolve:
 class TestMasking:
     def test_mask_secret_resolved(self) -> None:
         dm = DataManager()
-        dm._secret_hashes.add(hash("my_secret"))
+        dm._secret_values.add("my_secret")
         assert dm.mask("my_secret") == "***"
 
     def test_mask_non_secret(self) -> None:
@@ -48,10 +62,10 @@ class TestMasking:
         dm = DataManager()
         assert dm.mask(None) is None
 
-    def test_two_different_secrets_no_collision(self) -> None:
+    def test_two_different_secrets_both_masked(self) -> None:
         dm = DataManager()
-        dm._secret_hashes.add(hash("secret_a"))
-        dm._secret_hashes.add(hash("secret_b"))
+        dm._secret_values.add("secret_a")
+        dm._secret_values.add("secret_b")
         assert dm.mask("secret_a") == "***"
         assert dm.mask("secret_b") == "***"
         assert dm.mask("secret_c") == "secret_c"
@@ -72,11 +86,10 @@ class TestMasking:
         assert dm.mask("super_secret") == "***"
         del os.environ["DM_SECRET_TEST"]
 
-    def test_hash_stable(self) -> None:
-        assert hash("value") == hash("value")
+    def test_mask_non_string_value_returns_original(self) -> None:
         dm = DataManager()
-        dm._secret_hashes.add(hash("value"))
-        assert dm.mask("value") == "***"
+        dm._secret_values.add("42")
+        assert dm.mask(42) == 42
 
     def test_mask_after_resolve_file_not_masked(self, tmp_path: object) -> None:
         from pathlib import Path
@@ -99,12 +112,15 @@ class TestFixturesAndBuilders:
     def test_build_delegates(self) -> None:
         dm = DataManager()
         dm.builders.register("user", lambda o: {"name": "Bob", **o})
-        assert dm.build("user")["name"] == "Bob"
+        result = dm.build("user")
+        assert isinstance(result, dict)
+        assert result["name"] == "Bob"
 
     def test_build_with_includes(self) -> None:
         dm = DataManager()
         dm.builders.register("address", lambda o: {"city": "NYC"})
         dm.builders.register("user", lambda o: {"name": "Alice", **o})
         result = dm.build("user", includes={"address": "address"})
+        assert isinstance(result, dict)
         assert result["name"] == "Alice"
         assert result["address"]["city"] == "NYC"

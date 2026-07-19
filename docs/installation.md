@@ -37,15 +37,18 @@ pip install behave-data[dev,yaml,docs]  # For contributors
 
 ## Verify installation
 
-```bash
-python -m pytest --pyargs behave_data
-```
-
-Or in Python:
-
 ```python
 import behave_data
 print(behave_data.__version__)
+```
+
+To run the test suite after cloning the repository:
+
+```bash
+git clone https://github.com/MathiasPaulenko/behave-data.git
+cd behave-data
+pip install -e ".[dev,all]"
+make test-cov
 ```
 
 ## From source

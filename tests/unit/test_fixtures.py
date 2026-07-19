@@ -79,3 +79,26 @@ class TestDataFixtureDecorator:
         assert "user:alice" in reg.names()
         assert "user:bob" in reg.names()
         assert reg.get("user:alice")["name"] == "alice"
+
+    def test_global_registry_not_cleared(self) -> None:
+        @data_fixture("shared_fixture")
+        def shared_fixture() -> dict[str, str]:
+            return {"name": "Alice"}
+
+        reg1 = FixtureRegistry()
+        reg2 = FixtureRegistry()
+        assert "shared_fixture" in reg1.names()
+        assert "shared_fixture" in reg2.names()
+
+    def test_get_returns_non_dict_raises(self) -> None:
+        reg = FixtureRegistry()
+        reg.register("bad", lambda: None)  # type: ignore[arg-type, return-value]
+        with pytest.raises(BehaveDataError, match="must return a dict"):
+            reg.get("bad")
+
+    def test_ref_returns_non_dict_raises(self) -> None:
+        reg = FixtureRegistry()
+        reg.register("base", lambda: None)  # type: ignore[arg-type, return-value]
+        reg.register("child", lambda: {"x": "ref:base"})
+        with pytest.raises(BehaveDataError, match="must return a dict"):
+            reg.get("child")

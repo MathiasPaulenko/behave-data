@@ -48,11 +48,12 @@ class ExcelLoader:
             return []
 
         headers = [str(h) if h is not None else "" for h in rows[0]]
+        header_count = len(headers)
         result: list[dict[str, Any]] = []
         for row in rows[1:]:
             row_dict: dict[str, Any] = {}
-            for i, cell in enumerate(row):
-                key = headers[i] if i < len(headers) else f"col_{i}"
-                row_dict[key] = cell
+            for i in range(max(len(row), header_count)):
+                key = headers[i] if i < header_count else f"col_{i}"
+                row_dict[key] = row[i] if i < len(row) else None
             result.append(row_dict)
         return result

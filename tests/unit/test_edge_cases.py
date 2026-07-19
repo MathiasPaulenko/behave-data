@@ -127,19 +127,21 @@ class TestSecretsEdge:
         manager = MagicMock()
         manager.fixture.return_value = {"name": "Alice"}
         result = resolve_placeholder("ref:user", manager=manager)
+        assert isinstance(result, str)
         assert "Alice" in result
 
     def test_ref_resolves_non_dict_to_str(self) -> None:
         manager = MagicMock()
         manager.fixture.return_value = ["a", "b", "c"]
         result = resolve_placeholder("ref:items", manager=manager)
+        assert isinstance(result, str)
         assert "a" in result
 
     def test_secret_env_backend_none(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("NONEXISTENT_SECRET", raising=False)
         config = Config(secret_backend="env")
-        result = resolve_placeholder("secret:NONEXISTENT_SECRET", config)
-        assert result is None
+        with pytest.raises(KeyError, match="NONEXISTENT_SECRET"):
+            resolve_placeholder("secret:NONEXISTENT_SECRET", config)
 
     def test_secret_vault_with_mock(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("VAULT_ADDR", "http://vault:8200")
@@ -254,6 +256,16 @@ class FakeRowWithGetItem:
         return self._data[key]
 
 
+class FakeRowWithMissingKey:
+    def __init__(self, data: dict[str, str]) -> None:
+        self._data = data
+
+    def __getitem__(self, key: str) -> str:
+        if key not in self._data:
+            raise KeyError(key)
+        return self._data[key]
+
+
 class FakeTable:
     def __init__(self, headings: list[str], rows: list[Any]) -> None:
         self.headings = headings
@@ -286,6 +298,11 @@ class TestRawTableEdge:
         table = FakeTable(["a", "b"], [FakeRowWithGetItem({"a": "1", "b": "2"})])
         rt = RawTable(table)
         assert rt.rows == [["a", "b"], ["1", "2"]]
+
+    def test_fallback_row_missing_key_fills_empty(self) -> None:
+        table = FakeTable(["a", "b"], [FakeRowWithMissingKey({"a": "1"})])
+        rt = RawTable(table)
+        assert rt.rows == [["a", "b"], ["1", ""]]
 
 
 # --------------------------------------------------------------------------- #
@@ -346,16 +363,16 @@ class TestTypesEdge:
             convert_cell("not_a_bool", _parse_bool)
 
     def test_convert_cell_invalid_date(self) -> None:
-        from datetime import date
+        from behave_data.types import _parse_date
 
         with pytest.raises(TypeConversionError):
-            convert_cell("not_a_date", date)
+            convert_cell("not_a_date", _parse_date)
 
     def test_convert_cell_invalid_datetime(self) -> None:
-        from datetime import datetime
+        from behave_data.types import _parse_datetime
 
         with pytest.raises(TypeConversionError):
-            convert_cell("not_a_datetime", datetime)
+            convert_cell("not_a_datetime", _parse_datetime)
 
     def test_parse_column_header_no_type(self) -> None:
         name, converter, nullable = parse_column_header("just_name")
@@ -417,7 +434,7 @@ class TestNullEdge:
         assert resolve_null("") is None
 
     def test_resolve_null_none_input(self) -> None:
-        assert resolve_null(None) is None  # type: ignore[arg-type]
+        assert resolve_null(None) is None
 
 
 # --------------------------------------------------------------------------- #

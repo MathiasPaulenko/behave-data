@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-07-19
+
+First stable release. The API is frozen and ready for production use.
+
+### Added
+
+- `excel` schema alias for `@load_examples` tags (in addition to `xlsx`).
+- `wrap` and `TableWrapper` re-exports documented in the API reference.
+- `docs/migration.md` — step-by-step migration guide from behave-tables.
+- `MANIFEST.in` to ensure LICENSE and README are included in the sdist.
+- `pre-commit` to the `dev` extras.
+- Regression tests for `TableLike` compatibility, `resolve_placeholder` type checking, and `Config` marker validation.
+
+### Fixed
+
+- `TypedTableWrapper` now fully satisfies the `TableLike` protocol, exposing `headings` and `rows` properties.
+- `TypedTableWrapper` can re-wrap an existing `TableWrapper` or `TypedTableWrapper` without re-extracting rows.
+- `resolve_placeholder` raises a clear `TypeError` when given a non-string value.
+- `Config` validates that `null_markers` and `null_markers_by_column` contain only string values.
+- Codecov action updated to v4 with token authentication in CI.
+
+### Changed
+
+- Version bumped to 1.0.0 — API is considered stable.
+- `Development Status` classifier set to `Production/Stable`.
+- Coverage threshold enforced at 90% in `Makefile` and `pyproject.toml`.
+- Polished README, documentation, contributing guidelines, security policy, and package metadata for public release.
+- Improved `TypedTableWrapper.typed_dicts()` performance by precomputing column type and null-marker metadata once per call.
+
 ## [0.1.4] - 2026-07-17
 
 ### Added

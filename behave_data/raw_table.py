@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import overload
+
 from behave_tables.wrapper import TableLike
 
 
@@ -21,12 +23,31 @@ class RawTable:
         Args:
             table: A table-like object with ``headings`` and ``rows``.
         """
-        rows: list[list[str]] = [list(table.headings)]
+        headings = list(table.headings)
+        rows: list[list[str]] = [headings]
+        heading_count = len(headings)
+
         for row in table.rows:
-            try:
-                rows.append(list(row.as_dict().values()))
-            except (AttributeError, TypeError):
-                rows.append([row[h] for h in table.headings])
+            if isinstance(row, (list, tuple)):
+                row_copy = list(row)
+                if len(row_copy) < heading_count:
+                    row_copy.extend([""] * (heading_count - len(row_copy)))
+                rows.append(row_copy)
+            else:
+                try:
+                    as_dict = row.as_dict()
+                except (AttributeError, TypeError):
+                    as_dict = row if isinstance(row, dict) else None
+                if isinstance(as_dict, dict):
+                    rows.append([str(as_dict.get(h, "")) for h in headings])
+                else:
+                    values: list[str] = []
+                    for h in headings:
+                        try:
+                            values.append(str(row[h]))
+                        except (KeyError, IndexError, TypeError):
+                            values.append("")
+                    rows.append(values)
         self._rows: list[list[str]] = rows
 
     @property
@@ -78,6 +99,12 @@ class RawTable:
     def __len__(self) -> int:
         """Return the total number of rows."""
         return len(self._rows)
+
+    @overload
+    def __getitem__(self, index: int) -> list[str]: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[list[str]]: ...
 
     def __getitem__(self, index: int | slice) -> list[str] | list[list[str]]:
         """Return the row at the given index.

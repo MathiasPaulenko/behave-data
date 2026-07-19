@@ -50,7 +50,7 @@ class TestIsNull:
         assert is_null("null", markers=markers, column_markers=column_markers) is False
 
     def test_empty_markers_nothing_is_null(self) -> None:
-        markers = frozenset()
+        markers: frozenset[str] = frozenset()
         assert is_null("", markers=markers) is False
         assert is_null("null", markers=markers) is False
 

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Generator
+from typing import Any
 
 import pytest
 
@@ -11,6 +13,8 @@ from behave_data.patch import apply_patches, revert_patches
 
 class FakeTable:
     """Minimal fake Table for patch testing."""
+
+    existing_method: Any = None
 
     def __init__(self, headings: list[str], rows: list[list[str]]) -> None:
         self.headings = headings
@@ -29,7 +33,7 @@ class FakeRow:
 
 
 @pytest.fixture
-def patched_table_cls(monkeypatch: pytest.MonkeyPatch) -> type[FakeTable]:
+def patched_table_cls(monkeypatch: pytest.MonkeyPatch) -> Generator[type[FakeTable], None, None]:
     """Patch FakeTable as if it were behave.model.Table."""
     revert_patches()
     monkeypatch.setattr("behave.model.Table", FakeTable, raising=False)
@@ -197,8 +201,25 @@ class TestNoBehaveInstalled:
         def mock_import(name: str, *args: object, **kwargs: object) -> object:
             if name == "behave.model":
                 raise ImportError("No module named 'behave.model'")
-            return original_import(name, *args, **kwargs)
+            return original_import(name, *args, **kwargs)  # type: ignore[arg-type]
 
         monkeypatch.setattr(builtins, "__import__", mock_import)
         apply_patches()
         revert_patches()
+
+    def test_revert_patches_without_behave(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        import builtins
+
+        import behave_data.patch as patch_module
+
+        original_import = builtins.__import__
+
+        def mock_import(name: str, *args: object, **kwargs: object) -> object:
+            if name == "behave.model":
+                raise ImportError("No module named 'behave.model'")
+            return original_import(name, *args, **kwargs)  # type: ignore[arg-type]
+
+        monkeypatch.setattr(builtins, "__import__", mock_import)
+        patch_module._IS_PATCHED = True
+        revert_patches()
+        assert patch_module._IS_PATCHED is False

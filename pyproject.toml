@@ -4,17 +4,19 @@ build-backend = "hatchling.build"
 
 [project]
 name = "behave-data"
-version = "0.1.4"
+version = "1.0.0"
 description = "Data management for Behave — typed tables, diff, dynamic examples, fixtures, secrets"
 readme = "README.md"
-license = "MIT"
+license = { file = "LICENSE" }
 requires-python = ">=3.11"
-authors = [{ name = "Mathias Paulenko" }]
+authors = [{ name = "Mathias Paulenko", email = "mathias.paulenko@gmail.com" }]
 keywords = ["behave", "bdd", "data-tables", "examples", "typing", "diff", "fixtures", "testing"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -57,6 +59,7 @@ dev = [
     "ruff>=0.5",
     "mypy>=1.10",
     "build>=1.0",
+    "pre-commit>=3.0",
 ]
 
 [project.urls]
@@ -109,3 +112,7 @@ fail_under = 90
 [tool.mypy]
 strict = true
 ignore_missing_imports = true
+exclude = ["^tests/integration/"]
+
+[tool.deptry]
+optional_dependencies_dev_groups = ["dev", "docs"]

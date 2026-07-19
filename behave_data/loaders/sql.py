@@ -15,7 +15,11 @@ class SqlLoader:
         """Execute a SQL query and return results as list of dicts.
 
         Args:
-            source: SQL query string.
+            source: SQL query string. Optionally prefixed with a db name
+                from ``config.db_connections`` followed by a colon, e.g.
+                ``"reporting:SELECT * FROM users"``. If the prefix does not
+                match a configured db, the whole source is used as the query
+                with the ``"default"`` database.
             config: Configuration with db_connections mapping.
 
         Returns:
@@ -35,12 +39,22 @@ class SqlLoader:
             ) from None
 
         db_name = "default"
+        query = source
+        if ":" in source:
+            candidate, _, rest = source.partition(":")
+            if candidate in config.db_connections:
+                db_name = candidate
+                query = rest
+
         connection_string = config.db_connections.get(db_name)
         if connection_string is None:
             raise KeyError(f"Database '{db_name}' not found in config.db_connections")
 
         engine = sqlalchemy.create_engine(connection_string)
-        with engine.connect() as conn:
-            result = conn.execute(sqlalchemy.text(source))
-            columns = list(result.keys())
-            return [dict(zip(columns, row, strict=False)) for row in result]
+        try:
+            with engine.connect() as conn:
+                result = conn.execute(sqlalchemy.text(query))
+                columns = list(result.keys())
+                return [dict(zip(columns, row, strict=False)) for row in result]
+        finally:
+            engine.dispose()

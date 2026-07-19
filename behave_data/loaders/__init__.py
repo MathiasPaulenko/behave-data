@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from behave_data.config import Config
 from behave_data.errors import LoaderNotFoundError
+from behave_data.secrets import _validate_path_within_base
 
 _EXTENSION_MAP: dict[str, str] = {
     ".csv": "csv",
@@ -31,9 +33,18 @@ _LOADERS: dict[str, str] = {
     "json": "behave_data.loaders.json:JsonLoader",
     "yaml": "behave_data.loaders.yaml:YamlLoader",
     "xlsx": "behave_data.loaders.excel:ExcelLoader",
+    "excel": "behave_data.loaders.excel:ExcelLoader",
     "sql": "behave_data.loaders.sql:SqlLoader",
     "http": "behave_data.loaders.http:HttpLoader",
+    "https": "behave_data.loaders.http:HttpLoader",
 }
+
+# Matches a URI scheme followed by "://" so that source strings like
+# "http://example.com/data" are treated as full URLs, not as "http:" schema prefixes.
+_URL_SCHEME_PATTERN = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*://")
+
+# Matches an HTTP method prefix followed by a URL, e.g. "GET https://..." or "POST http://...".
+_HTTP_METHOD_PATTERN = re.compile(r"^(?:GET|POST)\s+(https?)://", re.IGNORECASE)
 
 
 def _resolve_loader(schema: str) -> Loader:
@@ -54,11 +65,20 @@ def _detect_schema(source: str) -> str | None:
 
     If source contains a schema prefix (e.g. ``csv:``), return it.
     Otherwise, detect from file extension.
+
+    Also recognizes HTTP method prefixes (``GET URL`` / ``POST URL``)
+    as documented by :class:`HttpLoader`.
     """
+    method_match = _HTTP_METHOD_PATTERN.match(source.strip())
+    if method_match:
+        return method_match.group(1)
+
     if ":" in source:
         prefix = source.split(":", 1)[0].lower()
         if prefix in _LOADERS:
             return prefix
+    if _URL_SCHEME_PATTERN.match(source):
+        return None
     p = Path(source)
     ext = p.suffix.lower()
     if ext in _EXTENSION_MAP:
@@ -69,9 +89,17 @@ def _detect_schema(source: str) -> str | None:
 def _resolve_path(source: str, config: Config) -> str:
     """Resolve a source path, using config.load_base_dir for relative paths."""
     p = Path(source)
-    if p.is_absolute() or ":" in source:
+    if p.is_absolute():
         return source
-    return str(Path(config.load_base_dir) / source)
+    if ":" in source:
+        raise ValueError(
+            f"Relative source path cannot contain ':': {source!r}. "
+            "Use an absolute path or remove ':' from the filename."
+        )
+    base = Path(config.load_base_dir)
+    full = base / source
+    _validate_path_within_base(full, base)
+    return str(full)
 
 
 def load(source: str, config: Config | None = None) -> list[dict[str, Any]]:
@@ -99,7 +127,11 @@ def load(source: str, config: Config | None = None) -> list[dict[str, Any]]:
 
     loader = _resolve_loader(schema)
 
-    if ":" in source and source.split(":", 1)[0].lower() == schema:
+    if (
+        ":" in source
+        and not _URL_SCHEME_PATTERN.match(source)
+        and source.split(":", 1)[0].lower() == schema
+    ):
         path = source.split(":", 1)[1]
     else:
         path = source
@@ -107,7 +139,7 @@ def load(source: str, config: Config | None = None) -> list[dict[str, Any]]:
     if not path.strip():
         raise ValueError(f"Source path cannot be empty after schema prefix: {source!r}")
 
-    if schema not in ("sql", "http"):
+    if schema not in ("sql", "http", "https"):
         path = _resolve_path(path, cfg)
 
     return loader.load(path, cfg)

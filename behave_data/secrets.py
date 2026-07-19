@@ -37,6 +37,8 @@ def resolve_placeholder(
 ) -> str | None:
     """Resolve a placeholder string to its actual value.
 
+    ``value`` must be a string; non-string values raise ``TypeError``.
+
     Supported prefixes:
         - ``env:VAR_NAME`` — read from environment variable.
         - ``file:relative/path`` — read from file, stripped.
@@ -56,7 +58,11 @@ def resolve_placeholder(
         FixtureNotFoundError: If ``ref:`` fixture is not registered.
         FileNotFoundError: If ``file:`` path doesn't exist.
         OptionalDependencyError: If vault/aws backend dependency missing.
+        TypeError: If ``value`` is not a string.
     """
+    if not isinstance(value, str):
+        raise TypeError(f"resolve_placeholder expects a string, got {type(value).__name__}")
+
     cfg = config if config is not None else Config()
 
     if value.startswith("env:"):
@@ -122,7 +128,9 @@ def _resolve_secret(name: str, config: Config) -> str | None:
         return full_path.read_text(encoding="utf-8").strip()
 
     if backend == "env":
-        return os.environ.get(name)
+        if name not in os.environ:
+            raise KeyError(f"Secret environment variable not found: {name}")
+        return os.environ[name]
 
     if backend == "vault":
         try:

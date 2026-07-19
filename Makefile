@@ -8,6 +8,7 @@ dev:
 
 lint:
 	ruff check .
+	mypy --strict behave_data/
 
 lint-fix:
 	ruff check . --fix
@@ -22,7 +23,7 @@ test:
 	pytest tests/ -v
 
 test-cov:
-	pytest tests/ -v --cov --cov-report=term-missing
+	pytest tests/ -v --cov --cov-report=term-missing --cov-fail-under=90
 
 clean:
 	rm -rf dist/ build/ *.egg-info/ .coverage htmlcov/ .pytest_cache/ .ruff_cache/

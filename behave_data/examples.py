@@ -8,7 +8,7 @@ from typing import Any
 from behave_data.config import Config
 from behave_data.loaders import load as _load
 
-_LOAD_TAG_PATTERN = re.compile(r"@load_examples:(.+)")
+_LOAD_TAG_PATTERN = re.compile(r"@load_examples:(.*)")
 
 
 def _find_load_tag(scenario: Any) -> str | None:
@@ -43,9 +43,13 @@ def _replace_example_rows(example: Any, data: list[dict[str, Any]]) -> None:
     """
     if not data:
         example.table.rows = []
+        example.table.headings = []
         return
 
     headers = list(data[0].keys())
+
+    def _cell(value: Any) -> str:
+        return "" if value is None else str(value)
 
     try:
         from behave.model import Row
@@ -53,14 +57,14 @@ def _replace_example_rows(example: Any, data: list[dict[str, Any]]) -> None:
         example.table.headings = headers
         example.table.rows = []
         for row_data in data:
-            cells = [str(row_data.get(h, "")) for h in headers]
+            cells = [_cell(row_data.get(h, "")) for h in headers]
             example.table.rows.append(_SimpleRow(cells, headers))
         return
 
     example.table.headings = headers
     example.table.rows = []
     for row_data in data:
-        cells = [str(row_data.get(h, "")) for h in headers]
+        cells = [_cell(row_data.get(h, "")) for h in headers]
         line = getattr(example, "line", 0)
         example.table.rows.append(Row(headers, cells, line))
 

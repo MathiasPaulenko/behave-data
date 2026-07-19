@@ -27,6 +27,10 @@ class TestParseBool:
     def test_falsy_values(self, value: str) -> None:
         assert _parse_bool(value) is False
 
+    @pytest.mark.parametrize("value", [1, 1.0, 0, 0.0])
+    def test_numeric_bool_values(self, value: float | int) -> None:
+        assert _parse_bool(value) is (value == 1)
+
     def test_invalid_raises(self) -> None:
         with pytest.raises(ValueError, match="Cannot parse"):
             _parse_bool("maybe")
@@ -150,6 +154,32 @@ class TestParseColumnHeader:
         assert converter is None
         assert nullable is False
 
+    def test_whitespace_around_colon_is_stripped(self) -> None:
+        name, converter, nullable = parse_column_header("age : int?")
+        assert name == "age"
+        assert converter is int
+        assert nullable is True
+
+    def test_whitespace_before_type_name_is_stripped(self) -> None:
+        name, converter, nullable = parse_column_header("name :  str")
+        assert name == "name"
+        assert converter is str
+        assert nullable is False
+
+    def test_nullable_empty_type_preserves_flag(self) -> None:
+        """Regression: name:? should return nullable=True, not False."""
+        name, converter, nullable = parse_column_header("name:?")
+        assert name == "name"
+        assert converter is None
+        assert nullable is True
+
+    def test_only_colon_with_question_mark(self) -> None:
+        """Regression: :? should return nullable=True, not False."""
+        name, converter, nullable = parse_column_header(":?")
+        assert name == ""
+        assert converter is None
+        assert nullable is True
+
 
 class TestConvertCell:
     def test_converter_none_returns_value(self) -> None:
@@ -224,6 +254,42 @@ class TestConvertCell:
 
         with pytest.raises(TypeConversionError):
             convert_cell("not-a-uuid", _parse_uuid)
+
+    def test_convert_bool_from_native_bool(self) -> None:
+        from behave_data.types import _parse_bool
+
+        assert convert_cell(True, _parse_bool) is True
+        assert convert_cell(False, _parse_bool) is False
+
+    def test_convert_date_from_datetime(self) -> None:
+        from behave_data.types import _parse_date
+
+        assert convert_cell(datetime(2024, 1, 15, 10, 30), _parse_date) == date(2024, 1, 15)
+
+    def test_convert_datetime_from_date(self) -> None:
+        from behave_data.types import _parse_datetime
+
+        assert convert_cell(date(2024, 1, 15), _parse_datetime) == datetime(2024, 1, 15, 0, 0)
+
+    def test_convert_datetime_from_datetime(self) -> None:
+        from behave_data.types import _parse_datetime
+
+        dt = datetime(2024, 1, 15, 10, 30)
+        assert convert_cell(dt, _parse_datetime) is dt
+
+    def test_convert_uuid_from_uuid(self) -> None:
+        import uuid
+
+        from behave_data.types import _parse_uuid
+
+        u = uuid.UUID("12345678-1234-5678-1234-567812345678")
+        assert convert_cell(u, _parse_uuid) is u
+
+    def test_convert_json_from_parsed_object(self) -> None:
+        from behave_data.types import _parse_json
+
+        data = {"a": 1}
+        assert convert_cell(data, _parse_json) is data
 
     def test_convert_invalid_json_raises(self) -> None:
         from behave_data.types import _parse_json

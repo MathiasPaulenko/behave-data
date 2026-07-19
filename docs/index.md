@@ -158,5 +158,6 @@ hooks
 api
 cookbook
 troubleshooting
+migration
 changelog
 ```

@@ -21,7 +21,17 @@ prefer to remain anonymous).
 
 ## Supported Versions
 
+Security updates are provided for the latest minor release series:
+
 | Version | Supported |
 | :--- | :--- |
-| 0.1.x | Yes |
-| < 0.1 | No |
+| 0.1.x | :white_check_mark: Yes |
+| < 0.1 | :x: No |
+
+Always upgrade to the latest patch release for the most recent fixes.
+
+## Disclosure Timeline
+
+- **Acknowledgement** within 48 hours of receiving a report.
+- **Initial assessment** within 7 days.
+- **Patch release** as soon as a fix is ready, typically co-ordinated with the reporter before public disclosure.

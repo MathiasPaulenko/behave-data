@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
+from behave_data.builders import _GLOBAL_BUILDERS
+from behave_data.fixtures import _GLOBAL_FIXTURES
 
 
 @dataclass
@@ -80,7 +83,7 @@ def tmp_data_file(
 
 
 @pytest.fixture(autouse=True)
-def _restore_env(monkeypatch: pytest.MonkeyPatch) -> None:
+def _restore_env(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
     """Ensure environment variables modified in tests are restored."""
     yield
 
@@ -93,3 +96,10 @@ def clean_env(monkeypatch: pytest.MonkeyPatch) -> Callable[[str], None]:
         monkeypatch.delenv(name, raising=False)
 
     return _del
+
+
+@pytest.fixture(autouse=True)
+def _clean_global_registries() -> None:
+    """Reset global decorator registries before each test for isolation."""
+    _GLOBAL_BUILDERS.clear()
+    _GLOBAL_FIXTURES.clear()

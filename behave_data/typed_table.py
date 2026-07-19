@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from behave_tables.wrapper import TableLike, TableWrapper
 
 from behave_data.config import Config
 from behave_data.null import get_column_markers, resolve_null
-from behave_data.types import convert_cell, parse_column_header
+from behave_data.types import TYPE_CONVERTERS, convert_cell, parse_column_header
 
 
-class TypedTableWrapper(TableWrapper):
+class TypedTableWrapper(TableWrapper):  # type: ignore[misc]
     """Extends TableWrapper with column typing, null resolution, and conversions.
 
     Adds ``typed_dicts()``, ``typed_objects()``, ``clean_headers()``,
@@ -24,10 +24,33 @@ class TypedTableWrapper(TableWrapper):
 
         Args:
             table: A table-like object with ``headings`` and ``rows``.
+                Can also be an existing ``TableWrapper``/``TypedTableWrapper``.
             config: Configuration for null markers and type overrides.
         """
-        super().__init__(table)
+        if isinstance(table, TableWrapper):
+            # Re-wrap an existing wrapper without re-extracting rows.
+            self._table = table._table
+            self._rows = [dict(r) for r in table._rows]
+        else:
+            super().__init__(table)
         self._config = config or Config()
+
+    @property
+    def headings(self) -> list[str]:
+        """Return a copy of the raw table headings.
+
+        Alias for :attr:`headers` that satisfies the ``TableLike`` protocol.
+        """
+        return cast("list[str]", self.headers)
+
+    @property
+    def rows(self) -> list[dict[str, str]]:
+        """Return a copy of the extracted rows as dicts.
+
+        Satisfies the ``TableLike`` protocol and makes ``TypedTableWrapper``
+        usable with ``raw_table`` and ``diff``.
+        """
+        return [dict(r) for r in self._rows]
 
     def clean_headers(self) -> list[str]:
         """Return clean column names without type annotations.
@@ -38,6 +61,43 @@ class TypedTableWrapper(TableWrapper):
             A list of clean column name strings.
         """
         return [parse_column_header(h)[0] for h in self.headers]
+
+    def _resolve_column_type(self, header: str, cfg: Config) -> tuple[str, Any, bool, str]:
+        """Determine the converter, type name, and nullable flag for a column.
+
+        Checks type overrides first, then falls back to the header annotation.
+
+        Args:
+            header: The raw column header (e.g. ``"age:int?"``).
+            cfg: The active config to check for type overrides.
+
+        Returns:
+            A tuple of ``(clean_name, converter, nullable, type_name)``.
+            ``converter`` is ``None`` when no type is specified.
+
+        Raises:
+            ValueError: If a type override specifies an unknown or empty type.
+        """
+        clean_name, converter, nullable = parse_column_header(header)
+        type_name = ""
+        if clean_name in cfg.type_overrides:
+            type_spec = cfg.type_overrides[clean_name].strip()
+            nullable = type_spec.endswith("?")
+            if nullable:
+                type_spec = type_spec[:-1].strip()
+            type_name = type_spec
+            converter = TYPE_CONVERTERS.get(type_spec)
+            if converter is None:
+                if type_spec:
+                    raise ValueError(
+                        f"Unknown type '{type_spec}' in type_overrides for column "
+                        f"'{clean_name}'. Register it with register_type() or use "
+                        f"one of: {', '.join(sorted(TYPE_CONVERTERS))}"
+                    )
+                raise ValueError(f"Empty type name in type_overrides for column '{clean_name}'")
+        elif converter is not None:
+            type_name = header.rsplit(":", 1)[-1].rstrip("?").strip()
+        return clean_name, converter, nullable, type_name
 
     def typed_dicts(self, config: Config | None = None) -> list[dict[str, Any]]:
         """Return all rows with type conversion and null resolution applied.
@@ -55,17 +115,29 @@ class TypedTableWrapper(TableWrapper):
         cfg = config or self._config
         result: list[dict[str, Any]] = []
 
+        columns: list[tuple[str, str, Any, bool, str, frozenset[str] | None]] = []
+        for header in self.headers:
+            clean_name, converter, nullable, type_name = self._resolve_column_type(header, cfg)
+            col_markers = get_column_markers(clean_name, cfg)
+            columns.append((header, clean_name, converter, nullable, type_name, col_markers))
+
         for row in self._rows:
             typed_row: dict[str, Any] = {}
-            for header in self.headers:
-                clean_name, converter, _nullable = parse_column_header(header)
+            for (
+                header,
+                clean_name,
+                converter,
+                nullable,
+                type_name,
+                col_markers,
+            ) in columns:
                 raw_value = row.get(header, "")
-                col_markers = get_column_markers(clean_name, cfg)
                 resolved = resolve_null(raw_value, cfg.null_markers, col_markers)
+                if resolved == "" and nullable:
+                    resolved = None
                 if resolved is None:
                     typed_row[clean_name] = None
                 elif converter is not None:
-                    type_name = header.rsplit(":", 1)[-1].rstrip("?") if ":" in header else ""
                     typed_row[clean_name] = convert_cell(resolved, converter, clean_name, type_name)
                 else:
                     typed_row[clean_name] = resolved

@@ -44,6 +44,8 @@ class HttpLoader:
         else:
             method = "GET"
             url = parts[0]
+            if url.upper() in ("GET", "POST"):
+                raise ValueError("HTTP source must include a URL after the method")
 
         method = method.upper()
         if method == "GET":

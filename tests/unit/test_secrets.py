@@ -64,6 +64,7 @@ class TestRefPlaceholder:
         manager = MagicMock()
         manager.fixture.return_value = {"name": "Alice"}
         result = resolve_placeholder("ref:user", manager=manager)
+        assert isinstance(result, str)
         assert "Alice" in result
 
     def test_ref_fixture_not_found(self) -> None:
@@ -81,6 +82,12 @@ class TestRefPlaceholder:
         with pytest.raises(ValueError, match="cannot be empty"):
             resolve_placeholder("ref:", manager=manager)
 
+    def test_ref_fixture_returns_none(self) -> None:
+        manager = MagicMock()
+        manager.fixture.return_value = None
+        with pytest.raises(FixtureNotFoundError, match="user"):
+            resolve_placeholder("ref:user", manager=manager)
+
 
 class TestNonPlaceholder:
     def test_plain_value_returned_as_is(self) -> None:
@@ -91,6 +98,10 @@ class TestNonPlaceholder:
         result = resolve_placeholder("")
         assert result == ""
 
+    def test_non_string_value_raises_type_error(self) -> None:
+        with pytest.raises(TypeError, match="string"):
+            resolve_placeholder(42)  # type: ignore[arg-type]
+
 
 class TestSecretBackend:
     def test_secret_env_backend(self, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -98,6 +109,13 @@ class TestSecretBackend:
         config = Config(secret_backend="env")
         result = resolve_placeholder("secret:MY_SECRET", config)
         assert result == "env_secret_val"
+
+    def test_secret_env_backend_not_found(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Regression: missing secret env var must raise KeyError, not silently return None."""
+        monkeypatch.delenv("DEFINITELY_NOT_SET_SECRET_12345", raising=False)
+        config = Config(secret_backend="env")
+        with pytest.raises(KeyError, match="DEFINITELY_NOT_SET_SECRET_12345"):
+            resolve_placeholder("secret:DEFINITELY_NOT_SET_SECRET_12345", config)
 
     def test_secret_file_backend(self, tmp_path: Path) -> None:
         secret_file = tmp_path / "api_key"
@@ -115,6 +133,11 @@ class TestSecretBackend:
         config = Config(secret_backend="file", secret_path=str(tmp_path))
         with pytest.raises(ValueError, match="path traversal"):
             resolve_placeholder("secret:../../etc/passwd", config)
+
+    def test_secret_empty_name_raises(self) -> None:
+        config = Config(secret_backend="env")
+        with pytest.raises(ValueError, match="cannot be empty"):
+            resolve_placeholder("secret:", config)
 
     def test_secret_unknown_backend(self) -> None:
         config = Config(secret_backend="invalid")

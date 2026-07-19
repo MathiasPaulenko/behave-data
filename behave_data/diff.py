@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import Any
 
 from behave_tables.wrapper import TableLike, TableWrapper
@@ -31,6 +32,7 @@ def diff(
 
     Raises:
         ValueError: If ``actual`` is a ``list[list]`` (needs headers).
+        TypeError: If ``actual`` is not a table-like object, list, or dict.
         TableDiffError: If the tables differ, with a Cucumber-style diff output.
     """
     ignore_set = set(ignore_columns) if ignore_columns else set()
@@ -116,9 +118,21 @@ def _normalize_actual(
     if isinstance(actual, list) and len(actual) == 0:
         return list(exp_headers), []
 
+    if not hasattr(actual, "headings") or not hasattr(actual, "rows"):
+        raise TypeError(
+            f"diff() 'actual' must be a table-like object (with 'headings' and 'rows'), "
+            f"a list[dict], or a dict — got {type(actual).__name__}"
+        )
+
     # Table-like object with headings + rows
     wrapper = TableWrapper(actual)
     return list(wrapper.headers), wrapper.as_dicts()
+
+
+def _cell_str(row: dict[str, str], header: str) -> str:
+    """Convert a cell value to string, treating None as empty string."""
+    val = row.get(header, "")
+    return "" if val is None else str(val)
 
 
 def _diff_ordered(
@@ -132,16 +146,16 @@ def _diff_ordered(
 
     for i in range(max_rows):
         if i < len(expected) and i < len(actual):
-            exp_vals = [str(expected[i].get(h, "")) for h in headers]
-            act_vals = [str(actual[i].get(h, "")) for h in headers]
+            exp_vals = [_cell_str(expected[i], h) for h in headers]
+            act_vals = [_cell_str(actual[i], h) for h in headers]
             if exp_vals != act_vals:
                 diff_lines.append(f"      - {_format_row(exp_vals)}")
                 diff_lines.append(f"      + {_format_row(act_vals)}")
         elif i < len(expected):
-            exp_vals = [str(expected[i].get(h, "")) for h in headers]
+            exp_vals = [_cell_str(expected[i], h) for h in headers]
             diff_lines.append(f"    - {_format_row(exp_vals)}")
         else:
-            act_vals = [str(actual[i].get(h, "")) for h in headers]
+            act_vals = [_cell_str(actual[i], h) for h in headers]
             diff_lines.append(f"    + {_format_row(act_vals)}")
 
     return diff_lines
@@ -153,20 +167,23 @@ def _diff_unordered(
     headers: list[str],
 ) -> list[str]:
     """Compare tables ignoring row order and return diff lines if different."""
-    exp_tuples = [tuple(str(row.get(h, "")) for h in headers) for row in expected]
-    act_tuples = [tuple(str(row.get(h, "")) for h in headers) for row in actual]
+    exp_tuples = [tuple(_cell_str(row, h) for h in headers) for row in expected]
+    act_tuples = [tuple(_cell_str(row, h) for h in headers) for row in actual]
 
-    exp_remaining = list(exp_tuples)
-    act_remaining = list(act_tuples)
+    exp_counter: Counter[tuple[str, ...]] = Counter(exp_tuples)
+    act_counter: Counter[tuple[str, ...]] = Counter(act_tuples)
 
     missing_rows: list[tuple[str, ...]] = []
-    for row in exp_remaining:
-        if row in act_remaining:
-            act_remaining.remove(row)
-        else:
-            missing_rows.append(row)
+    for row in sorted(exp_counter):
+        diff = exp_counter[row] - act_counter.get(row, 0)
+        if diff > 0:
+            missing_rows.extend([row] * diff)
 
-    surplus_rows = list(act_remaining)
+    surplus_rows: list[tuple[str, ...]] = []
+    for row in sorted(act_counter):
+        diff = act_counter[row] - exp_counter.get(row, 0)
+        if diff > 0:
+            surplus_rows.extend([row] * diff)
 
     diff_lines: list[str] = []
     for row in missing_rows:

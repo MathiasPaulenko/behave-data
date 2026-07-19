@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python&logoColor=white)](https://pypi.org/project/behave-data/)
 [![Tests](https://img.shields.io/github/actions/workflow/status/MathiasPaulenko/behave-data/ci.yml?label=tests)](https://github.com/MathiasPaulenko/behave-data/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/github/actions/workflow/status/MathiasPaulenko/behave-data/docs.yml?label=docs&color=blueviolet)](https://mathiaspaulenko.github.io/behave-data/)
-[![Coverage](https://img.shields.io/badge/coverage-98%25-brightgreen)](https://github.com/MathiasPaulenko/behave-data)
+[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/MathiasPaulenko/behave-data)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 **Data management for [Behave](https://github.com/behave/behave) — typed tables, diffs, dynamic examples, fixtures, and secrets with zero boilerplate.**
@@ -12,6 +12,16 @@
 Built on top of [behave-tables](https://github.com/MathiasPaulenko/behave-tables).
 
 > **Full documentation:** [mathiaspaulenko.github.io/behave-data](https://mathiaspaulenko.github.io/behave-data/)
+
+## Quick links
+
+- [Documentation](https://mathiaspaulenko.github.io/behave-data/)
+- [Installation](https://mathiaspaulenko.github.io/behave-data/installation.html)
+- [Quickstart](https://mathiaspaulenko.github.io/behave-data/quickstart.html)
+- [Changelog](CHANGELOG.md)
+- [Contributing](CONTRIBUTING.md)
+- [Security](SECURITY.md)
+- [License](LICENSE)
 
 ---
 
@@ -57,6 +67,7 @@ Optional extras:
 | `http` | requests | HTTP loader |
 | `vault` | hvac | HashiCorp Vault secrets |
 | `aws` | boto3 | AWS Secrets Manager |
+| `all` | all above | All optional loaders and backends |
 | `dev` | pytest, ruff, mypy, build | Development |
 
 ```bash
@@ -163,6 +174,17 @@ load_base_dir: features/data/
 ```
 
 See [Configuration](https://mathiaspaulenko.github.io/behave-data/configuration.html) for all options.
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for setup, development commands, and the release checklist.
+
+For security issues, see [SECURITY.md](SECURITY.md).
+
+## Acknowledgements
+
+- Built on [behave-tables](https://github.com/MathiasPaulenko/behave-tables) for table manipulation.
+- Inspired by the Behave community's need for first-class data handling in Gherkin scenarios.
 
 ## License
 
