@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any
 
 from behave_tables.wrapper import TableLike, TableWrapper
 
@@ -41,7 +41,7 @@ class TypedTableWrapper(TableWrapper):  # type: ignore[misc]
 
         Alias for :attr:`headers` that satisfies the ``TableLike`` protocol.
         """
-        return cast("list[str]", self.headers)
+        return list(self.headers)
 
     @property
     def rows(self) -> list[dict[str, str]]:
