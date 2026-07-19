@@ -27,6 +27,10 @@ class HttpLoader:
         Raises:
             OptionalDependencyError: If requests is not installed.
         """
+        parts = source.strip().split(None, 1)
+        if not parts or not parts[0]:
+            raise ValueError("HTTP source cannot be empty")
+
         try:
             import requests
         except ImportError:
@@ -35,10 +39,6 @@ class HttpLoader:
                 "HTTP loading",
                 "pip install behave-data[http]",
             ) from None
-
-        parts = source.strip().split(None, 1)
-        if not parts or not parts[0]:
-            raise ValueError("HTTP source cannot be empty")
         if len(parts) == 2:
             method, url = parts
         else:

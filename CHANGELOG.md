@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-07-19
+
+### Fixed
+
+- Move empty-source validation before `import requests` in `HttpLoader.load()` so `ValueError` is raised regardless of whether `requests` is installed.
+- Add `http` extra to CI dependencies so HTTP loader tests can run with `requests` installed.
+
 ## [1.0.1] - 2026-07-19
 
 ### Fixed
