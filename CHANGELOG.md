@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-07-19
+
+### Fixed
+
+- Fixed mypy cross-version compatibility: removed `--strict` flag from CI command (already in `pyproject.toml`), allowing `warn_unused_ignores = false` to take effect across Python 3.11–3.14.
+- Removed redundant `cast()` in `TypedTableWrapper.headings` property.
+
 ## [1.0.0] - 2026-07-19
 
 First stable release. The API is frozen and ready for production use.

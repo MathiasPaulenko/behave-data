@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "behave-data"
-version = "1.0.0"
+version = "1.0.1"
 description = "Data management for Behave — typed tables, diff, dynamic examples, fixtures, secrets"
 readme = "README.md"
 license = { file = "LICENSE" }
