@@ -59,14 +59,18 @@ from behave_data import (
 def before_all(context):
     setup_data(context)
 
+
 def before_feature(context, feature):
     before_feature_hook(context, feature)
+
 
 def before_scenario(context, scenario):
     before_scenario_hook(context, scenario)
 
+
 def before_step(context, step):
     before_step_hook(context, step)
+
 
 def after_scenario(context, scenario):
     after_scenario_hook(context, scenario)
@@ -83,6 +87,7 @@ def after_scenario(context, scenario):
 ```python
 from types import SimpleNamespace
 from behave_data import data_fixture
+
 
 @data_fixture("user")
 def user():
@@ -158,6 +163,7 @@ TypeError: Product.__init__() got an unexpected keyword argument 'active'
 
 ```python
 from dataclasses import dataclass
+
 
 @dataclass
 class Product:

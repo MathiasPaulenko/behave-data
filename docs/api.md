@@ -91,6 +91,7 @@ user = registry.get("user")
 ```python
 from behave_data import data_fixture
 
+
 @data_fixture("user")
 def user():
     return {"name": "Alice"}
@@ -110,6 +111,7 @@ product = registry.build("product")
 
 ```python
 from behave_data import data_builder
+
 
 @data_builder("product")
 def product(overrides):
@@ -195,14 +197,18 @@ Typical `environment.py`:
 def before_all(context):
     setup_data(context)
 
+
 def before_feature(context, feature):
     before_feature_hook(context, feature)
+
 
 def before_scenario(context, scenario):
     before_scenario_hook(context, scenario)
 
+
 def before_step(context, step):
     before_step_hook(context, step)
+
 
 def after_scenario(context, scenario):
     after_scenario_hook(context, scenario)

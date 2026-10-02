@@ -34,6 +34,7 @@ In the step:
 ```python
 from behave import given, then
 
+
 @given("I am logged in as admin")
 def step_admin_login(context):
     user = context.admin_user
@@ -139,6 +140,7 @@ Self-references raise an error:
 @data_fixture("loop")
 def loop():
     return {"self": "ref:loop"}
+
 
 # raises BehaveDataError: Circular fixture reference
 ```

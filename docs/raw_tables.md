@@ -21,6 +21,7 @@ Scenario: Raw matrix
 ```python
 from behave_data import RawTable, raw_table
 
+
 @given("a raw table")
 def step_raw(context):
     context.raw = raw_table(context.table)
@@ -35,9 +36,9 @@ def step_raw(context):
 ## Access rows
 
 ```python
-context.raw.rows      # all rows including header
+context.raw.rows  # all rows including header
 context.raw.raw_rows  # alias
-len(context.raw)      # number of rows (including header)
+len(context.raw)  # number of rows (including header)
 ```
 
 Index a row:

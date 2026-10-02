@@ -9,6 +9,7 @@ Compare expected vs actual tables with readable, Cucumber-style output.
 ```python
 from behave_data import diff, TableDiffError
 
+
 @then("the actual table matches expected")
 def step_actual_matches(context):
     diff(context.expected_table, context.actual_table)
@@ -26,6 +27,7 @@ Tables were not identical:
 
 ```python
 from behave_data import diff, TableDiffError
+
 
 @then("the tables match")
 def step_check_diff(context):
@@ -78,13 +80,16 @@ Feature: Table comparison
 ```python
 from behave_data import diff
 
+
 @given("an expected price list")
 def step_expected(context):
     context.expected = context.table
 
+
 @when("the actual price list is")
 def step_actual(context):
     context.actual = context.table
+
 
 @then("the prices should match")
 def step_match(context):

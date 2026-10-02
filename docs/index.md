@@ -93,6 +93,7 @@ And in your steps:
 from behave import given
 from behave_data import typed_wrap
 
+
 @given("users")
 def step_users(context):
     context.users = typed_wrap(context.table).typed_dicts()

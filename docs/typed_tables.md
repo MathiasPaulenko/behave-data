@@ -26,6 +26,7 @@ Supported types:
 ```python
 from behave_data import typed_wrap
 
+
 @given("products")
 def step_products(context):
     context.products = typed_wrap(context.table).typed_dicts()
@@ -78,11 +79,13 @@ Convert to dataclasses or any class with `typed_objects()`:
 ```python
 from dataclasses import dataclass
 
+
 @dataclass
 class Product:
     name: str
     price: float
     active: bool
+
 
 context.products = typed_wrap(context.table).typed_objects(Product)
 for product in context.products:
