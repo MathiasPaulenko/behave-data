@@ -13,12 +13,14 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11", "3.12", "3.13", "3.14"]
+        # behave floor (1.3.0) + latest (unpinned)
+        behave-pin: ["", "behave==1.3.0"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -e ".[dev,yaml,excel,http]"
+      - run: pip install -e ".[dev,yaml,excel,http]" ${{ matrix.behave-pin }}
       - run: ruff check .
       - run: ruff format --check .
       - run: mypy behave_data/

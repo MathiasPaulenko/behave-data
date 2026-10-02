@@ -3,7 +3,7 @@
 ## Requirements
 
 - Python 3.11+
-- `behave` 1.2.6+
+- `behave` 1.3.0+
 - `behave-tables` 1.3.0+
 
 ## Basic install
@@ -39,6 +39,7 @@ pip install behave-data[dev,yaml,docs]  # For contributors
 
 ```python
 import behave_data
+
 print(behave_data.__version__)
 ```
 
