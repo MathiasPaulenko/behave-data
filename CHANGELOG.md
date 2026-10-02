@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-02
+
+### Added
+
+- `data_sources` config option: named sources for `@load_examples:<name>` tags and `load(<name>)` calls. Required for sources Behave's tag sanitizer can't carry (paths with `/`, URLs, SQL queries).
+- `@load_examples:` tags can now be placed on an individual `Examples:` block, overriding the scenario/feature tag for that block.
+- `context.resolved_text`: doc strings are placeholder-resolved alongside `context.resolved_table`.
+- `{placeholder}` resolution supports dict key access (`{user.email}` works when `context.user` is a dict).
+- `diff()` accepts `list[dict]` and `dict` for the `expected` argument too.
+- `Config` is now hashable.
+- Re-registering a builder/fixture name logs a warning.
+
+### Fixed
+
+- **`@load_examples` never matched**: the tag pattern required a leading `@`, but Behave delivers `scenario.tags`/`feature.tags` without it. The feature now works; integration tests assert real loaded data.
+- `before_step_hook` leaked the previous step's `resolved_table` into steps without a table; both `resolved_table` and `resolved_text` are now reset to `None`.
+- A non-callable entry in `_behave_data_cleanup_funcs` aborted all subsequent cleanups; it's now collected like other cleanup errors.
+- `diff()` silently ignored dict keys that appeared only in later `actual` rows; headers are now the union of all row keys.
+- `@needs_data:`/`@with_fixture:` with parametrized names (`user:alice`) created unusable `context."user:alice"` attributes; the base name is set instead, and reserved names (`data`, `config`, ...) are skipped.
+- `RawTable` rendered `None` cell values as the literal string `"None"`; they now become `""`.
+- `is_null`/`resolve_null` raised `TypeError` on unhashable values (lists, dicts).
+- `Config.from_dict` silently dropped unknown keys; it now logs a warning.
+- `DataManager.mask()` only masked exact matches; secrets embedded in larger strings are now replaced too.
+- `BuilderRegistry`/`FixtureRegistry` snapshots missed builders/fixtures registered after instantiation; lookups now fall back to the global registries.
+- `revert_patches()` deleted attributes that other code had replaced after `apply_patches()`; it now only restores/removes attributes that are still ours.
+- `setup_data()` only tried `behave_data.yml`; it now picks the first existing of `.yml`/`.yaml`/`.json`.
+
+### Changed
+
+- **Minimum behave version is now 1.3.0** (was 1.2.6). On behave 1.2.x, `Context.__getattr__` raises `KeyError` (not `AttributeError`) for missing `_`-prefixed attributes, which crashed `before_scenario`/`after_scenario` hooks on `hasattr`/`getattr` defaults. Rather than carry compat shims, the floor was raised to the current stable line.
+- CI now runs the test matrix against behave 1.3.0 and latest.
+
+### Docs
+
+- `hooks.md` no longer claims step-text placeholders are resolved before matching (impossible — matching happens first); documents `resolved_table`/`resolved_text` and dict access.
+- `dynamic_examples.md` documents tag character limitations and `data_sources`; all path examples use `load_base_dir`-relative names.
+
 ## [1.0.2] - 2026-07-19
 
 ### Fixed
