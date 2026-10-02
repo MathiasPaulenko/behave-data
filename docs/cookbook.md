@@ -108,7 +108,7 @@ bob,bob@example.com,25
 ```gherkin
 Feature: User registration
 
-  @load_examples:csv:features/data/users.csv
+  @load_examples:csv:users.csv
   Scenario Outline: Register user
     Given a user with name "<name>", email "<email>" and age <age>
     Then the user is valid

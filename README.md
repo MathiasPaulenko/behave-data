@@ -45,13 +45,15 @@ Behave data tables are strings. Everything is `"42"`, `"true"`, `""`. You write 
 - **Null Resolution** — Empty cells become `None`, configurable markers (`""`, `"null"`, `"N/A"`), per-column overrides
 - **Table Diff** — Cucumber-style diff output with row/column mismatch detection
 - **Raw Tables** — Access tables without header assumption, vertical tables, transposed data
-- **Dynamic Examples** — `@load_examples:csv:users.csv` replaces static Examples blocks
+- **Dynamic Examples** — `@load_examples:csv:users.csv` replaces static Examples blocks; named `data_sources` for URLs, SQL, nested paths
 - **Fixtures** — Reusable data recipes with nesting (`ref:other`) and parametrization
 - **Builders** — Construct test data with derived fields and overrides
 - **Secrets** — `env:`, `file:`, `secret:` placeholders with Vault and AWS backends, automatic masking
 - **Declarative Tags** — `@needs_data`, `@with_fixture`, `@cleanup_after` for zero-boilerplate setup/teardown
 
 ## Install
+
+Requires Python 3.11+ and behave 1.3.0+.
 
 ```bash
 pip install behave-data
@@ -87,17 +89,22 @@ from behave_data import (
     after_scenario_hook,
 )
 
+
 def before_all(context):
     setup_data(context)
+
 
 def before_feature(context, feature):
     before_feature_hook(context, feature)
 
+
 def before_scenario(context, scenario):
     before_scenario_hook(context, scenario)
 
+
 def before_step(context, step):
     before_step_hook(context, step)
+
 
 def after_scenario(context, scenario):
     after_scenario_hook(context, scenario)
@@ -105,7 +112,7 @@ def after_scenario(context, scenario):
 
 ```gherkin
 # features/login.feature
-@load_examples:csv:features/data/users.csv
+@load_examples:csv:users.csv
 Scenario Outline: User login
   Given a user with name "<name>" and email "<email>"
   When they log in
@@ -118,11 +125,12 @@ Scenario Outline: User login
 # features/steps/login.py
 from behave_data import typed_wrap, diff
 
+
 @then("the users should match")
 def step_match(context):
     table = typed_wrap(context.table)
     for row in table.typed_dicts():
-        assert isinstance(row["age"], int)      # typed, not string
+        assert isinstance(row["age"], int)  # typed, not string
         assert row["city"] is None or row["city"]  # None for empty cells
 ```
 
@@ -171,6 +179,8 @@ null_markers_by_column:
 secret_backend: env
 secret_path: secrets/
 load_base_dir: features/data/
+data_sources:
+  users_api: "http:https://api.example.com/users"   # @load_examples:users_api
 ```
 
 See [Configuration](https://mathiaspaulenko.github.io/behave-data/configuration.html) for all options.

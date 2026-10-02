@@ -111,7 +111,7 @@ null_markers:
 Replace static `Examples` with data loaded from CSV, JSON, YAML, Excel, SQL, or HTTP:
 
 ```gherkin
-@load_examples:csv:features/data/users.csv
+@load_examples:csv:users.csv
 Scenario Outline: Create user
   Given a user with name "<name>" and email "<email>"
 
