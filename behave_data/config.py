@@ -24,6 +24,7 @@ _KNOWN_KEYS = frozenset(
         "load_base_dir",
         "db_connections",
         "type_overrides",
+        "data_sources",
     }
 )
 
@@ -47,6 +48,10 @@ class Config:
         load_base_dir: Base directory for relative file loading.
         db_connections: Named database connection strings.
         type_overrides: Per-column type overrides.
+        data_sources: Named data sources for ``@load_examples:<name>`` tags
+            and ``load(<name>)`` calls. Behave strips ``/`` and whitespace
+            from tag names, so sources containing them (paths, URLs, SQL
+            queries) must be referenced through this mapping.
     """
 
     null_markers: frozenset[str] = DEFAULT_NULL_MARKERS
@@ -56,6 +61,7 @@ class Config:
     load_base_dir: str = "features/data/"
     db_connections: dict[str, str] = field(default_factory=dict)
     type_overrides: dict[str, str] = field(default_factory=dict)
+    data_sources: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         """Validate field types."""
@@ -116,6 +122,25 @@ class Config:
                     f"db_connections[{key!r}] must be a string, got {type(connection).__name__}"
                 )
 
+        if not isinstance(self.data_sources, dict):
+            raise TypeError(f"data_sources must be a dict, got {type(self.data_sources).__name__}")
+        for key, source in self.data_sources.items():
+            if not isinstance(source, str):
+                raise TypeError(
+                    f"data_sources[{key!r}] must be a string, got {type(source).__name__}"
+                )
+
+    def __hash__(self) -> int:
+        """Hash over the hashable fields so a Config can be used in sets/dicts."""
+        return hash(
+            (
+                self.null_markers,
+                self.secret_backend,
+                self.secret_path,
+                self.load_base_dir,
+            )
+        )
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Config:
         """Create a Config from a dict, filtering unknown keys and converting lists to frozensets.
@@ -126,6 +151,9 @@ class Config:
         Returns:
             A Config instance with values from data, defaults for missing keys.
         """
+        unknown = sorted(set(data) - _KNOWN_KEYS)
+        if unknown:
+            logger.warning("Ignoring unknown config keys: %s", ", ".join(unknown))
         filtered = {k: v for k, v in data.items() if k in _KNOWN_KEYS}
 
         # Treat explicit nulls for mapping/string fields as "use the default"
@@ -271,7 +299,7 @@ class Config:
                     val = str(val)
                 data[key] = val
 
-        for key in ("null_markers_by_column", "db_connections", "type_overrides"):
+        for key in ("null_markers_by_column", "db_connections", "type_overrides", "data_sources"):
             if key in filtered:
                 try:
                     data[key] = json.loads(filtered[key])

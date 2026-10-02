@@ -438,3 +438,29 @@ class TestFromDictEdgeCases:
         """Regression: non-string null_markers value should be coerced to str."""
         cfg = Config.from_userdata({"behave_data.null_markers": 123})  # type: ignore[dict-item]
         assert cfg.null_markers == frozenset({"123"})
+
+
+class TestDataSources:
+    def test_data_sources_from_dict(self) -> None:
+        cfg = Config.from_dict({"data_sources": {"users": "csv:users.csv"}})
+        assert cfg.data_sources == {"users": "csv:users.csv"}
+
+    def test_data_sources_default_empty(self) -> None:
+        assert Config().data_sources == {}
+
+    def test_data_sources_non_string_rejected(self) -> None:
+        import pytest
+
+        with pytest.raises(TypeError, match="data_sources"):
+            Config.from_dict({"data_sources": {"users": 123}})
+
+    def test_data_sources_from_userdata_json(self) -> None:
+        cfg = Config.from_userdata({"behave_data.data_sources": '{"users": "csv:users.csv"}'})
+        assert cfg.data_sources == {"users": "csv:users.csv"}
+
+
+class TestConfigHash:
+    def test_config_is_hashable(self) -> None:
+        """Regression: frozen dataclass must be usable in sets/dicts."""
+        assert hash(Config()) == hash(Config())
+        assert len({Config(), Config()}) == 1
