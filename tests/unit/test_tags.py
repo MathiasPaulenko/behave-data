@@ -220,3 +220,39 @@ class TestProcessTagsAfterScenario:
         assert results == ["good1", "good2"]
         assert ctx._behave_data_cleanup is False
         assert ctx._behave_data_cleanup_funcs == []
+
+
+class TestCleanupNonCallable:
+    def test_non_callable_does_not_abort_remaining_cleanups(self) -> None:
+        """Regression: a non-callable entry must not silently drop later cleanups."""
+        ctx = MagicMock()
+        calls: list[bool] = []
+        ctx._behave_data_cleanup = True
+        ctx._behave_data_cleanup_funcs = ["not_callable", lambda: calls.append(True)]
+        with pytest.raises(BehaveDataError, match="must be callable"):
+            process_tags_after_scenario(ctx, FakeScenario())
+        assert calls == [True]
+
+
+class TestParametrizedFixtureAttrName:
+    def test_needs_data_parametrized_sets_base_attr(self) -> None:
+        """@needs_data:user:alice sets context.user (colon names aren't dot-accessible)."""
+        ctx = MagicMock()
+        ctx.data.fixture.return_value = {"name": "Alice"}
+        ctx._behave_data_loaded = {}
+        scenario = FakeScenario(tags=["@needs_data:user:alice"])
+        process_tags_before_scenario(ctx, scenario)
+        ctx.data.fixture.assert_called_once_with("user:alice")
+        assert ctx.user == {"name": "Alice"}
+        assert ctx._behave_data_loaded["user:alice"] == {"name": "Alice"}
+
+    def test_needs_data_reserved_name_not_setattr(self) -> None:
+        """A fixture named 'data' must not clobber context.data."""
+        ctx = MagicMock()
+        manager = ctx.data
+        ctx.data.fixture.return_value = {"x": 1}
+        ctx._behave_data_loaded = {}
+        scenario = FakeScenario(tags=["@needs_data:data"])
+        process_tags_before_scenario(ctx, scenario)
+        assert ctx.data is manager
+        assert ctx._behave_data_loaded["data"] == {"x": 1}
