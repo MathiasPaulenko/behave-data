@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 from behave_data.config import Config
@@ -24,7 +26,8 @@ def setup_data(context: Any, config: Config | None = None) -> None:
     Configuration priority:
     1. Explicit ``config`` parameter
     2. ``context.config.userdata`` (from ``behave.ini`` ``[userdata]``)
-    3. ``behave_data.yml`` file
+    3. First existing file among ``behave_data.yml``, ``behave_data.yaml``,
+       ``behave_data.json`` (defaults when none exists)
 
     Args:
         context: The Behave context object.
@@ -37,17 +40,27 @@ def setup_data(context: Any, config: Config | None = None) -> None:
         if isinstance(userdata, dict) and any(k.startswith("behave_data.") for k in userdata):
             cfg = Config.from_userdata(userdata)
         else:
-            cfg = Config.from_file("behave_data.yml")
+            cfg = _config_from_file()
     else:
-        cfg = Config.from_file("behave_data.yml")
+        cfg = _config_from_file()
     context.data = DataManager(cfg)
     apply_patches()
+
+
+def _config_from_file() -> Config:
+    """Load Config from the first config file that exists, or defaults."""
+    for candidate in ("behave_data.yml", "behave_data.yaml", "behave_data.json"):
+        if Path(candidate).exists():
+            return Config.from_file(candidate)
+    return Config.from_file("behave_data.yml")
 
 
 def _resolve_placeholders(value: str, context: Any) -> str:
     """Resolve ``{placeholder}`` patterns in a string using context attributes.
 
-    Supports nested attribute access via dot notation, e.g. ``{user.name}``.
+    Supports nested access via dot notation, e.g. ``{user.name}``. Intermediate
+    objects may expose attributes (``obj.attr``) or be mappings
+    (``mapping[key]``) — mappings are tried by key first.
 
     Args:
         value: The string potentially containing placeholders.
@@ -61,7 +74,14 @@ def _resolve_placeholders(value: str, context: Any) -> str:
         key = match.group(1)
         obj: Any = context
         for part in key.split("."):
-            if not part.isidentifier() or part.startswith("_"):
+            if part.startswith("_"):
+                return match.group(0)
+            if isinstance(obj, Mapping):
+                if part in obj:
+                    obj = obj[part]
+                    continue
+                return match.group(0)
+            if not part.isidentifier():
                 return match.group(0)
             if hasattr(obj, part):
                 obj = getattr(obj, part)
@@ -73,11 +93,17 @@ def _resolve_placeholders(value: str, context: Any) -> str:
 
 
 def before_step_hook(context: Any, step: Any) -> None:
-    """Resolve placeholders in table cells before each step.
+    """Resolve placeholders in table cells and doc strings before each step.
 
-    This hook does NOT mutate the original table. If the step has an
-    associated table, resolved placeholders are stored in
-    ``context.resolved_table`` as ``{"headings": [...], "rows": [...]}``.
+    This hook does NOT mutate the step. If the step has an associated table,
+    resolved placeholders are stored in ``context.resolved_table`` as
+    ``{"headings": [...], "rows": [...]}``; if it has a doc string, the
+    resolved text is stored in ``context.resolved_text``. Both attributes
+    are reset to None when the step has no table/text, so stale values from
+    a previous step never leak through.
+
+    Placeholders in the step *text* itself cannot be resolved here — Behave
+    matches step text to a step definition before this hook runs.
 
     Args:
         context: The Behave context object.
@@ -85,19 +111,22 @@ def before_step_hook(context: Any, step: Any) -> None:
     """
     table = getattr(step, "table", None)
     if table is None:
-        return
+        context.resolved_table = None
+    else:
+        from behave_data.raw_table import RawTable
 
-    from behave_data.raw_table import RawTable
+        raw = RawTable(table)
+        resolved_rows: list[list[str]] = []
+        for row in raw.rows:
+            resolved_rows.append([_resolve_placeholders(cell, context) for cell in row])
 
-    raw = RawTable(table)
-    resolved_rows: list[list[str]] = []
-    for row in raw.rows:
-        resolved_rows.append([_resolve_placeholders(cell, context) for cell in row])
+        context.resolved_table = {
+            "headings": resolved_rows[0],
+            "rows": resolved_rows[1:],
+        }
 
-    context.resolved_table = {
-        "headings": resolved_rows[0],
-        "rows": resolved_rows[1:],
-    }
+    text = getattr(step, "text", None)
+    context.resolved_text = _resolve_placeholders(text, context) if isinstance(text, str) else None
 
 
 def before_feature_hook(context: Any, feature: Any) -> None:

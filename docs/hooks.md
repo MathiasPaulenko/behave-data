@@ -47,6 +47,7 @@ Pass a custom config:
 ```python
 from behave_data import Config
 
+
 def before_all(context):
     setup_data(context, Config(null_markers={"", "n/a"}))
 ```
@@ -61,13 +62,17 @@ Processes declarative tags: `@needs_data`, `@with_fixture`, `@cleanup_after`.
 
 ## before_step_hook
 
-Resolves placeholders in step text and table cells:
+Resolves `{placeholder}` patterns in the step's **table** and **doc string**.
+The original step is never mutated — results are stored on the context:
 
-```gherkin
-Given I login as {user.name}
-```
+- `context.resolved_table` → `{"headings": [...], "rows": [...]}` (or `None` when the step has no table)
+- `context.resolved_text` → resolved doc string (or `None`)
 
-If `context.user` exists with a `name` attribute, `{user.name}` is replaced.
+Both attributes are reset on every step, so values never leak between steps.
+
+> Placeholders in the step *text* itself (`Given I login as {user.name}`)
+> are **not** resolved: Behave matches the step text to a step definition
+> before `before_step` runs. Use table cells or doc strings instead.
 
 ## after_scenario_hook
 
@@ -75,36 +80,38 @@ Runs cleanup functions registered via `@cleanup_after` or `_behave_data_cleanup_
 
 ## Placeholder resolution in steps
 
-Placeholders use **attribute access** (`{obj.attr}`). The fixture must return an object with attributes, or you can attach a dict to the context and use `SimpleNamespace`:
+Placeholders use dot notation (`{obj.attr}`). Intermediate objects can be
+objects with attributes, or plain dicts — dict keys are looked up first:
 
 ```python
-from types import SimpleNamespace
 from behave_data import data_fixture
+
 
 @data_fixture("user")
 def user():
-    return SimpleNamespace(name="Alice", email="alice@example.com")
+    return {"name": "Alice", "email": "alice@example.com"}
 ```
 
 Feature:
 
 ```gherkin
 @needs_data:user
-Scenario: Send email
-  Given I send email to {user.email}
-```
-
-The step text becomes `I send email to alice@example.com` before matching.
-
-Placeholders also work inside table cells:
-
-```gherkin
-@needs_data:user
 Scenario: Email via table
   Given a recipient table
-    | email          |
-    | {user.email}   |
+    | email        |
+    | {user.email} |
 ```
+
+In the step, read the resolved copy:
+
+```python
+@given("a recipient table")
+def step_recipient(context):
+    email = context.resolved_table["rows"][0][0]  # "alice@example.com"
+```
+
+Attribute access also works — attach a `SimpleNamespace` or any object to
+the context and `{user.email}` resolves through attributes.
 
 ## Manual hook usage
 

@@ -94,7 +94,15 @@ class TestBeforeStepHook:
         ctx = FakeContext()
         step = FakeStep(table=None)
         before_step_hook(ctx, step)
-        assert not hasattr(ctx, "resolved_table")
+        assert ctx.resolved_table is None
+
+    def test_stale_resolved_table_cleared(self) -> None:
+        """Regression: resolved_table must not leak into a step without a table."""
+        ctx = FakeContext(user="Alice")
+        before_step_hook(ctx, FakeStep(table=FakeTable(["name"], [["{user}"]])))
+        assert ctx.resolved_table["rows"] == [["Alice"]]
+        before_step_hook(ctx, FakeStep(table=None))
+        assert ctx.resolved_table is None
 
     def test_does_not_mutate_original_table(self) -> None:
         ctx = FakeContext(user="Alice")
@@ -178,3 +186,34 @@ class TestBeforeStepHook:
         step = FakeStep(table=table)
         before_step_hook(ctx, step)
         assert ctx.resolved_table["rows"][0] == ["{2nd}"]
+
+    def test_dict_key_access(self) -> None:
+        """Fixtures that return dicts must resolve via key lookup."""
+        ctx = FakeContext(user={"email": "alice@x.com"})
+        table = FakeTable(["email"], [["{user.email}"]])
+        before_step_hook(ctx, FakeStep(table=table))
+        assert ctx.resolved_table["rows"][0] == ["alice@x.com"]
+
+    def test_dict_missing_key_left_unresolved(self) -> None:
+        ctx = FakeContext(user={"email": "alice@x.com"})
+        table = FakeTable(["attr"], [["{user.missing}"]])
+        before_step_hook(ctx, FakeStep(table=table))
+        assert ctx.resolved_table["rows"][0] == ["{user.missing}"]
+
+    def test_docstring_resolved_into_resolved_text(self) -> None:
+        ctx = FakeContext(user="Alice")
+        step = FakeStep(table=None)
+        step.text = "hello {user}"
+        before_step_hook(ctx, step)
+        assert ctx.resolved_text == "hello Alice"
+
+    def test_resolved_text_cleared_without_docstring(self) -> None:
+        """Regression: resolved_text must not leak from a previous step."""
+        ctx = FakeContext(user="Alice")
+        step = FakeStep(table=None)
+        step.text = "hello {user}"
+        before_step_hook(ctx, step)
+        assert ctx.resolved_text == "hello Alice"
+        step2 = FakeStep(table=None)
+        before_step_hook(ctx, step2)
+        assert ctx.resolved_text is None
