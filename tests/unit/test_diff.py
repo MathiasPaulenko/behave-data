@@ -339,3 +339,45 @@ class TestUnsupportedActualTypes:
         expected = make_table(["name"], [["Alice"]])
         with pytest.raises(TypeError, match="must be a table-like object"):
             diff(expected, "hello")
+
+
+class TestListDictHeterogeneousKeys:
+    def test_extra_key_in_later_row_detected(
+        self, make_table: Callable[[list[str], list[list[str]]], Any]
+    ) -> None:
+        """Regression: keys appearing only in later rows must not be ignored."""
+        expected = make_table(["a"], [["1"], ["2"]])
+        actual = [{"a": "1"}, {"a": "2", "b": "X"}]
+        with pytest.raises(TableDiffError):
+            diff(expected, actual)
+
+    def test_missing_key_in_later_row_detected(
+        self, make_table: Callable[[list[str], list[list[str]]], Any]
+    ) -> None:
+        expected = make_table(["a", "b"], [["1", "x"], ["2", "y"]])
+        actual = [{"a": "1", "b": "x"}, {"a": "2"}]
+        with pytest.raises(TableDiffError):
+            diff(expected, actual)
+
+
+class TestExpectedAsListDict:
+    def test_expected_list_of_dicts_identical(
+        self, make_table: Callable[[list[str], list[list[str]]], Any]
+    ) -> None:
+        diff([{"name": "Alice"}], [{"name": "Alice"}])
+
+    def test_expected_list_of_dicts_differs(
+        self, make_table: Callable[[list[str], list[list[str]]], Any]
+    ) -> None:
+        with pytest.raises(TableDiffError):
+            diff([{"name": "Alice"}], [{"name": "Bob"}])
+
+    def test_expected_dict_vs_table(
+        self, make_table: Callable[[list[str], list[list[str]]], Any]
+    ) -> None:
+        actual = make_table(["name"], [["Alice"]])
+        diff({"name": "Alice"}, actual)
+
+    def test_expected_list_of_lists_raises(self) -> None:
+        with pytest.raises(ValueError, match="headers are required"):
+            diff([["a"], ["1"]], [{"a": "1"}])

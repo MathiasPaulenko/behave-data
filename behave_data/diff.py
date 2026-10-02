@@ -5,13 +5,13 @@ from __future__ import annotations
 from collections import Counter
 from typing import Any
 
-from behave_tables.wrapper import TableLike, TableWrapper
+from behave_tables.wrapper import TableWrapper
 
 from behave_data.errors import TableDiffError
 
 
 def diff(
-    expected: TableLike,
+    expected: Any,
     actual: Any,
     *,
     ordered: bool = True,
@@ -21,7 +21,8 @@ def diff(
     """Compare two tables and raise TableDiffError if they differ.
 
     Args:
-        expected: The expected table (table-like with ``headings`` and ``rows``).
+        expected: The expected data. Accepts a table-like object (with
+            ``headings`` and ``rows``), ``list[dict]``, or a single ``dict``.
         actual: The actual data. Accepts a table-like object, ``list[dict]``,
             or a single ``dict`` (wrapped in a list). ``list[list]`` raises
             ``ValueError`` because headers are needed.
@@ -31,17 +32,21 @@ def diff(
             comparison (they don't cause a diff).
 
     Raises:
-        ValueError: If ``actual`` is a ``list[list]`` (needs headers).
-        TypeError: If ``actual`` is not a table-like object, list, or dict.
+        ValueError: If either side is a ``list[list]`` (needs headers).
+        TypeError: If a side is not a table-like object, list, or dict.
         TableDiffError: If the tables differ, with a Cucumber-style diff output.
     """
     ignore_set = set(ignore_columns) if ignore_columns else set()
 
-    exp_wrapper = TableWrapper(expected)
-    exp_headers = [h for h in exp_wrapper.headers if h not in ignore_set]
-    exp_rows = exp_wrapper.as_dicts()
+    exp_headers, exp_rows = _normalize_table(expected, "expected")
+    exp_headers = [h for h in exp_headers if h not in ignore_set]
 
-    act_headers, act_rows = _normalize_actual(actual, exp_headers)
+    act_headers, act_rows = _normalize_table(actual, "actual")
+
+    # An empty actual list has no headers of its own — compare against
+    # the expected headers so it diffs purely on missing rows.
+    if isinstance(actual, list) and not actual:
+        act_headers = list(exp_headers)
 
     # Filter ignore_columns from actual
     act_headers = [h for h in act_headers if h not in ignore_set]
@@ -84,48 +89,57 @@ def diff(
         raise TableDiffError(output)
 
 
-def _normalize_actual(
-    actual: Any,
-    exp_headers: list[str],
+def _normalize_table(
+    value: Any,
+    role: str,
 ) -> tuple[list[str], list[dict[str, str]]]:
-    """Normalize actual into (headers, rows).
+    """Normalize a diff operand into (headers, rows).
+
+    For ``list[dict]``, headers are the union of all row keys (in
+    first-seen order), so a key appearing only in a later row is still
+    compared instead of being silently dropped.
 
     Args:
-        actual: The actual data to normalize.
-        exp_headers: Expected headers, used as fallback for dict normalization.
+        value: The data to normalize (table-like, list[dict], or dict).
+        role: ``"expected"`` or ``"actual"``, used in error messages.
 
     Returns:
         A tuple of (headers, list of row dicts).
 
     Raises:
-        ValueError: If actual is a list[list] (needs headers).
+        ValueError: If value is a list[list] (needs headers).
+        TypeError: If value is not a table-like object, list, or dict.
     """
-    if isinstance(actual, dict):
-        actual = [actual]
+    if isinstance(value, dict):
+        value = [value]
 
-    if isinstance(actual, list) and len(actual) > 0 and isinstance(actual[0], dict):
-        # list[dict] — infer headers from first dict keys
-        headers = list(actual[0].keys())
-        rows = [dict(d) for d in actual]
-        return headers, rows
+    if isinstance(value, list) and len(value) > 0 and isinstance(value[0], dict):
+        for i, d in enumerate(value):
+            if not isinstance(d, dict):
+                raise TypeError(
+                    f"diff() '{role}' list items must all be dicts, "
+                    f"got {type(d).__name__} at index {i}"
+                )
+        headers = list(dict.fromkeys(k for row in value for k in row))
+        return headers, [dict(d) for d in value]
 
-    if isinstance(actual, list) and len(actual) > 0 and isinstance(actual[0], (list, tuple)):
+    if isinstance(value, list) and len(value) > 0 and isinstance(value[0], (list, tuple)):
         raise ValueError(
             "Cannot diff list[list] — headers are required. "
             "Provide a table-like object or list[dict] instead."
         )
 
-    if isinstance(actual, list) and len(actual) == 0:
-        return list(exp_headers), []
+    if isinstance(value, list) and len(value) == 0:
+        return [], []
 
-    if not hasattr(actual, "headings") or not hasattr(actual, "rows"):
+    if not hasattr(value, "headings") or not hasattr(value, "rows"):
         raise TypeError(
-            f"diff() 'actual' must be a table-like object (with 'headings' and 'rows'), "
-            f"a list[dict], or a dict — got {type(actual).__name__}"
+            f"diff() '{role}' must be a table-like object (with 'headings' and 'rows'), "
+            f"a list[dict], or a dict — got {type(value).__name__}"
         )
 
     # Table-like object with headings + rows
-    wrapper = TableWrapper(actual)
+    wrapper = TableWrapper(value)
     return list(wrapper.headers), wrapper.as_dicts()
 
 
