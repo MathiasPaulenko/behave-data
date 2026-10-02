@@ -223,3 +223,17 @@ class TestNoBehaveInstalled:
         patch_module._IS_PATCHED = True
         revert_patches()
         assert patch_module._IS_PATCHED is False
+
+
+class TestRevertPreservesOverrides:
+    def test_method_overridden_after_apply_survives_revert(self) -> None:
+        """Regression: revert must not delete methods set by other code."""
+        from behave.model import Table
+
+        revert_patches()
+        apply_patches()
+        sentinel = lambda self: "mine"  # noqa: E731
+        Table.diff = sentinel
+        revert_patches()
+        assert Table.diff is sentinel
+        delattr(Table, "diff")

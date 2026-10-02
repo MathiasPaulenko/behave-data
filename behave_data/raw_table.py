@@ -7,6 +7,11 @@ from typing import overload
 from behave_tables.wrapper import TableLike
 
 
+def _cell_str(value: object) -> str:
+    """Convert a cell value to string, treating None as empty."""
+    return "" if value is None else str(value)
+
+
 class RawTable:
     """Wraps a table-like object providing access to all rows including the header.
 
@@ -39,12 +44,12 @@ class RawTable:
                 except (AttributeError, TypeError):
                     as_dict = row if isinstance(row, dict) else None
                 if isinstance(as_dict, dict):
-                    rows.append([str(as_dict.get(h, "")) for h in headings])
+                    rows.append([_cell_str(as_dict.get(h, "")) for h in headings])
                 else:
                     values: list[str] = []
                     for h in headings:
                         try:
-                            values.append(str(row[h]))
+                            values.append(_cell_str(row[h]))
                         except (KeyError, IndexError, TypeError):
                             values.append("")
                     rows.append(values)

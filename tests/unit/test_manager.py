@@ -124,3 +124,21 @@ class TestFixturesAndBuilders:
         assert isinstance(result, dict)
         assert result["name"] == "Alice"
         assert result["address"]["city"] == "NYC"
+
+
+class TestMaskSubstring:
+    def test_secret_embedded_in_larger_string_masked(self) -> None:
+        """Regression: 'Bearer <secret>' must mask the embedded secret."""
+        dm = DataManager()
+        dm._secret_values.add("abc123")
+        assert dm.mask("Bearer abc123") == "Bearer ***"
+
+    def test_exact_secret_still_masks_to_stars(self) -> None:
+        dm = DataManager()
+        dm._secret_values.add("abc123")
+        assert dm.mask("abc123") == "***"
+
+    def test_empty_secret_value_ignored(self) -> None:
+        dm = DataManager()
+        dm._secret_values.add("")
+        assert dm.mask("anything") == "anything"

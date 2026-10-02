@@ -74,15 +74,22 @@ class DataManager:
     def mask(self, value: Any) -> Any:
         """Mask a value if it was resolved from a secret.
 
+        Secrets are masked wherever they appear: an exact match becomes
+        ``"***"``, and a secret embedded in a larger string is replaced
+        in place (e.g. ``"Bearer abc"`` -> ``"Bearer ***"``).
+
         Args:
             value: The value to check.
 
         Returns:
-            ``"***"`` if the value is a secret value, else original value.
-            None returns None. Non-string values return the original value.
+            The value with any known secret occurrences replaced by
+            ``"***"``, or the original value. None returns None.
+            Non-string values return the original value.
         """
         if value is None:
             return None
-        if isinstance(value, str) and value in self._secret_values:
-            return "***"
+        if isinstance(value, str):
+            for secret in self._secret_values:
+                if secret and secret in value:
+                    value = value.replace(secret, "***")
         return value

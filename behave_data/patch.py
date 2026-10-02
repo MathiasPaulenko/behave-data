@@ -142,11 +142,15 @@ def revert_patches() -> None:
         return
 
     for name in _METHOD_NAMES:
+        current = getattr(Table, name, None)
+        # Only touch attributes that are still ours — anything replaced
+        # after apply_patches() belongs to someone else and stays.
+        if current is not _IMPLEMENTATIONS[name]:
+            continue
         if name in _ORIGINAL_METHODS:
             setattr(Table, name, _ORIGINAL_METHODS[name])
         else:
-            if hasattr(Table, name):
-                delattr(Table, name)
+            delattr(Table, name)
 
     if hasattr(Table, "_behave_data_patched"):
         delattr(Table, "_behave_data_patched")

@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
 from behave_data.errors import BehaveDataError, FixtureNotFoundError
+
+logger = logging.getLogger("behave_data")
+logger.addHandler(logging.NullHandler())
 
 _GLOBAL_FIXTURES: dict[str, dict[str, Any]] = {}
 
@@ -13,12 +17,20 @@ _GLOBAL_FIXTURES: dict[str, dict[str, Any]] = {}
 class FixtureRegistry:
     """Registry for fixtures with scope, nesting, and parametrization.
 
+    Lookups check instance registrations first, then the global registry
+    populated by ``@data_fixture`` — so fixtures registered after this
+    registry was created are still visible.
+
     Attributes:
         _fixtures: Mapping of fixture name to {"func": func, "scope": scope}.
     """
 
     def __init__(self) -> None:
         self._fixtures: dict[str, dict[str, Any]] = dict(_GLOBAL_FIXTURES)
+
+    def _lookup(self, name: str) -> dict[str, Any] | None:
+        """Find a fixture entry: instance registrations first, then globals."""
+        return self._fixtures.get(name) or _GLOBAL_FIXTURES.get(name)
 
     def register(
         self, name: str, func: Callable[..., dict[str, Any]], scope: str = "scenario"
@@ -48,9 +60,10 @@ class FixtureRegistry:
             FixtureNotFoundError: If fixture is not registered.
             BehaveDataError: If circular reference detected.
         """
-        if name not in self._fixtures:
+        entry = self._lookup(name)
+        if entry is None:
             raise FixtureNotFoundError(name)
-        data = self._fixtures[name]["func"]()
+        data = entry["func"]()
         if not isinstance(data, dict):
             raise BehaveDataError(f"Fixture '{name}' must return a dict, got {type(data).__name__}")
         if overrides:
@@ -59,7 +72,7 @@ class FixtureRegistry:
 
     def names(self) -> list[str]:
         """Return the list of registered fixture names."""
-        return list(self._fixtures.keys())
+        return list({**_GLOBAL_FIXTURES, **self._fixtures})
 
     def _resolve_refs(self, data: dict[str, Any], in_progress: set[str]) -> dict[str, Any]:
         """Resolve ``ref:other`` values recursively.
@@ -82,9 +95,10 @@ class FixtureRegistry:
                     raise ValueError("Fixture reference name cannot be empty in 'ref:' value")
                 if ref_name in in_progress:
                     raise BehaveDataError(f"Circular fixture reference: {ref_name}")
-                if ref_name not in self._fixtures:
+                ref_entry = self._lookup(ref_name)
+                if ref_entry is None:
                     raise FixtureNotFoundError(ref_name)
-                ref_data = self._fixtures[ref_name]["func"]()
+                ref_data = ref_entry["func"]()
                 if not isinstance(ref_data, dict):
                     raise BehaveDataError(
                         f"Fixture '{ref_name}' must return a dict, got {type(ref_data).__name__}"
@@ -121,6 +135,11 @@ def data_fixture(
         if params is not None:
             for param in params:
                 param_name = f"{name}:{param}"
+                if param_name in _GLOBAL_FIXTURES:
+                    logger.warning(
+                        "Fixture %r re-registered — replacing previous definition",
+                        param_name,
+                    )
 
                 def make_wrapper(
                     func: Callable[..., dict[str, Any]], param: Any
@@ -132,6 +151,8 @@ def data_fixture(
 
                 _GLOBAL_FIXTURES[param_name] = {"func": make_wrapper(func, param), "scope": scope}
         else:
+            if name in _GLOBAL_FIXTURES:
+                logger.warning("Fixture %r re-registered — replacing previous definition", name)
             _GLOBAL_FIXTURES[name] = {"func": func, "scope": scope}
         return func
 

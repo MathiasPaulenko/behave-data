@@ -2,20 +2,33 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from typing import Any
 
 from behave_data.errors import BehaveDataError, BuilderNotFoundError
 
+logger = logging.getLogger("behave_data")
+logger.addHandler(logging.NullHandler())
+
 _GLOBAL_BUILDERS: dict[str, Callable[..., dict[str, Any]]] = {}
 
 
 class BuilderRegistry:
-    """Registry for builders with derived fields and nesting."""
+    """Registry for builders with derived fields and nesting.
+
+    Lookups check instance registrations first, then the global registry
+    populated by ``@data_builder`` — so builders registered after this
+    registry was created are still visible.
+    """
 
     def __init__(self) -> None:
         """Initialize the registry with globally registered builders."""
         self._builders: dict[str, Callable[..., dict[str, Any]]] = dict(_GLOBAL_BUILDERS)
+
+    def _lookup(self, name: str) -> Callable[..., dict[str, Any]] | None:
+        """Find a builder: instance registrations first, then globals."""
+        return self._builders.get(name) or _GLOBAL_BUILDERS.get(name)
 
     def register(self, name: str, func: Callable[..., dict[str, Any]]) -> None:
         """Register a builder function.
@@ -51,7 +64,7 @@ class BuilderRegistry:
             ValueError: If count is negative.
             BehaveDataError: If a circular builder reference is detected.
         """
-        if name not in self._builders:
+        if self._lookup(name) is None:
             raise BuilderNotFoundError(name)
         if count < 0:
             raise ValueError(f"count must be non-negative, got {count}")
@@ -71,11 +84,11 @@ class BuilderRegistry:
     ) -> dict[str, Any]:
         if in_progress is None:
             in_progress = set()
-        if name not in self._builders:
-            raise BuilderNotFoundError(name)
         if name in in_progress:
             raise BehaveDataError(f"Circular builder reference: {name}")
-        func = self._builders[name]
+        func = self._lookup(name)
+        if func is None:
+            raise BuilderNotFoundError(name)
         data = func(dict(overrides))
         if not isinstance(data, dict):
             raise BehaveDataError(f"Builder '{name}' must return a dict, got {type(data).__name__}")
@@ -86,7 +99,7 @@ class BuilderRegistry:
 
     def names(self) -> list[str]:
         """Return the list of registered builder names."""
-        return list(self._builders.keys())
+        return list({**_GLOBAL_BUILDERS, **self._builders})
 
 
 def data_builder(
@@ -95,6 +108,8 @@ def data_builder(
     """Decorator to register a builder."""
 
     def decorator(func: Callable[..., dict[str, Any]]) -> Callable[..., dict[str, Any]]:
+        if name in _GLOBAL_BUILDERS:
+            logger.warning("Builder %r re-registered — replacing previous definition", name)
         _GLOBAL_BUILDERS[name] = func
         return func
 

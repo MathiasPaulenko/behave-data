@@ -91,3 +91,13 @@ class TestGetColumnMarkers:
         cfg = Config()
         markers = get_column_markers("any", cfg)
         assert markers is None
+
+
+class TestUnhashableValues:
+    def test_is_null_unhashable_returns_false(self) -> None:
+        """Regression: unhashable values must not raise TypeError."""
+        assert is_null([1, 2]) is False
+        assert is_null({"a": 1}) is False
+
+    def test_resolve_null_unhashable_returns_original(self) -> None:
+        assert resolve_null([1, 2]) == [1, 2]

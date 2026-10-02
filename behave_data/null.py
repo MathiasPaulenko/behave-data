@@ -36,6 +36,10 @@ def is_null(
     Returns:
         True if the value is a null marker, False otherwise.
     """
+    # Markers are always strings, so a non-string value can never match —
+    # this also avoids TypeError on unhashable values like lists or dicts.
+    if not isinstance(value, str):
+        return False
     if column_markers is not None:
         return value in column_markers
     if markers is not None:
