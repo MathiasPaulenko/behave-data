@@ -51,6 +51,9 @@ secret_path: secrets/
 load_base_dir: features/data/
 db_connections:
   default: sqlite:///test.db
+data_sources:
+  users_api: "http:https://api.example.com/users"
+  users_query: "sql:SELECT name, email FROM users"
 ```
 
 ## JSON file
@@ -83,7 +86,7 @@ config = Config(
 
 1. **Explicit parameter** — `setup_data(context, my_config)`
 2. **`behave.ini` `[userdata]`** — if any `behave_data.*` keys are present in `context.config.userdata`
-3. **`behave_data.yml`** — fallback file
+3. **Config file** — first existing among `behave_data.yml`, `behave_data.yaml`, `behave_data.json`; defaults when none exists
 
 ## Options
 
@@ -96,6 +99,7 @@ config = Config(
 | `behave_data.load_base_dir`         | `load_base_dir`          | `"features/data/"`            | string          | Base path for dynamic Examples      |
 | `behave_data.db_connections`        | `db_connections`         | `{}`                          | JSON string     | Named database connection strings   |
 | `behave_data.type_overrides`        | `type_overrides`         | `{}`                          | JSON string     | Per-column type overrides           |
+| `behave_data.data_sources`          | `data_sources`           | `{}`                          | JSON string     | Named sources for `@load_examples`/`load()` |
 
 ## Loading config manually
 
@@ -115,6 +119,7 @@ If the file does not exist, a default `Config()` is returned.
 
 ```python
 from behave_data import setup_data, Config
+
 
 def before_all(context):
     setup_data(context, Config.from_file("config/behave_data.yml"))

@@ -109,8 +109,14 @@ def load(source: str, config: Config | None = None) -> list[dict[str, Any]]:
     resolves relative paths against ``config.load_base_dir``,
     and delegates to the appropriate loader.
 
+    If ``source`` matches a key in ``config.data_sources``, the mapped
+    value is used instead. This lets short names stand in for sources
+    that can't be expressed inline (e.g. in tags, where Behave strips
+    ``/`` and whitespace).
+
     Args:
-        source: Source string with optional schema prefix.
+        source: Source string with optional schema prefix, or a key in
+            ``config.data_sources``.
         config: Configuration with load_base_dir and connection settings.
 
     Returns:
@@ -120,6 +126,8 @@ def load(source: str, config: Config | None = None) -> list[dict[str, Any]]:
         LoaderNotFoundError: If no loader matches the source.
     """
     cfg = config if config is not None else Config()
+
+    source = cfg.data_sources.get(source, source)
 
     schema = _detect_schema(source)
     if schema is None:

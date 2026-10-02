@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
 from behave_data.config import Config
 from behave_data.loaders import load as _load
 
-_LOAD_TAG_PATTERN = re.compile(r"@load_examples:(.*)")
+_LOAD_TAG_PREFIX = "load_examples:"
 
 
 def _find_load_tag(scenario: Any) -> str | None:
-    """Find a @load_examples:source tag on a scenario or its feature.
+    """Find a ``load_examples:<source>`` tag on a scenario or its feature.
+
+    Behave delivers tags without the ``@`` prefix, so both forms are accepted.
+    Note that Behave's tag sanitizer strips ``/``, ``\\`` and whitespace from
+    tag names — sources containing those characters must be registered in
+    ``config.data_sources`` and referenced by name.
 
     Args:
         scenario: A Behave scenario object with ``tags`` and ``feature.tags``.
@@ -26,9 +30,9 @@ def _find_load_tag(scenario: Any) -> str | None:
         tags.extend(getattr(feature, "tags", []))
 
     for tag in tags:
-        match = _LOAD_TAG_PATTERN.match(tag.strip())
-        if match:
-            return match.group(1).strip()
+        tag = str(tag).lstrip("@").strip()
+        if tag.startswith(_LOAD_TAG_PREFIX):
+            return tag[len(_LOAD_TAG_PREFIX) :].strip()
     return None
 
 
@@ -89,6 +93,13 @@ def load_examples_for_feature(feature: Any, config: Config) -> None:
     Iterates ``feature.scenarios``, finds ``@load_examples:source`` tags,
     and replaces Example rows with data loaded from the source.
 
+    The tag may be placed on the Scenario Outline (applies to all its
+    Examples blocks), on the Feature, or on an individual Examples block
+    (takes precedence for that block). The tag value is resolved through
+    ``config.data_sources`` first, so named sources can hold values that
+    Behave's tag sanitizer would mangle (paths with ``/``, URLs, SQL
+    queries, etc.).
+
     Args:
         feature: A Behave Feature object with ``scenarios``.
         config: Configuration for loader resolution.
@@ -97,16 +108,30 @@ def load_examples_for_feature(feature: Any, config: Config) -> None:
     if not scenarios:
         return
 
+    cache: dict[str, list[dict[str, Any]]] = {}
+
+    def load_source(source: str) -> list[dict[str, Any]]:
+        if source not in cache:
+            cache[source] = _load(source, config)
+        return cache[source]
+
     for scenario in scenarios:
         source = _find_load_tag(scenario)
         if source is None:
             continue
 
-        data = _load(source, config)
+        # Load eagerly so an invalid source fails even without Examples.
+        data = load_source(source)
 
         examples = getattr(scenario, "examples", [])
         if not examples:
             continue
 
         for example in examples:
-            _replace_example_rows(example, data)
+            # An Examples block may carry its own @load_examples tag.
+            block_source = _find_load_tag(example)
+            block_data = load_source(block_source) if block_source is not None else data
+            table = getattr(example, "table", None)
+            if table is None:
+                continue
+            _replace_example_rows(example, block_data)

@@ -235,6 +235,18 @@ def step_user_email(context, name, email):
     assert context.current_email == email
 
 
+@then('the loaded user "{name}" should have email "{email}"')
+def step_loaded_user_email(context, name, email):
+    expected_users = {
+        "Alice": "alice@example.com",
+        "Bob": "bob@example.com",
+        "Carol": "carol@example.com",
+    }
+    assert expected_users[name] == email
+    assert context.current_name == name
+    assert context.current_email == email
+
+
 @given('a product with name "{name}" and price "{price}"')
 def step_product_with(context, name, price):
     context.current_product_name = name
@@ -243,5 +255,13 @@ def step_product_with(context, name, price):
 
 @then('the product "{name}" should cost "{price}"')
 def step_product_cost(context, name, price):
+    assert context.current_product_name == name
+    assert context.current_product_price == price
+
+
+@then('the loaded product "{name}" should cost "{price}"')
+def step_loaded_product_cost(context, name, price):
+    expected_prices = {"Laptop": "999.99", "Mouse": "29.99", "Keyboard": "79.99"}
+    assert expected_prices[name] == price
     assert context.current_product_name == name
     assert context.current_product_price == price

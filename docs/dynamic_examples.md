@@ -4,10 +4,10 @@ Replace static `Examples` blocks with data from CSV, JSON, YAML, Excel, SQL, or 
 
 ## Basic syntax
 
-Tag a `Scenario Outline` with `@load_examples:<source>`. You still need an empty `Examples:` block; behave-data replaces its rows at runtime.
+Tag a `Scenario Outline` with `@load_examples:<source>`. You still need an `Examples:` block; behave-data replaces its rows at runtime.
 
 ```gherkin
-@load_examples:csv:features/data/users.csv
+@load_examples:csv:users.csv
 Scenario Outline: Create user
   Given I have a user with name "<name>" and email "<email>"
   Then the user is valid
@@ -16,7 +16,30 @@ Scenario Outline: Create user
     | placeholder | placeholder |
 ```
 
-The columns `name` and `email` come from the CSV headers.
+Relative paths are resolved against `load_base_dir` (`features/data/` by default).
+
+### Tag limitations
+
+Behave strips `/`, `\`, and whitespace from tag names, and splits tags on
+spaces. A tag can therefore only carry sources without those characters —
+basically `csv:users.csv`-style paths relative to `load_base_dir`.
+
+For anything else (nested paths, URLs, SQL queries), register the source
+in `data_sources` and reference it by name:
+
+```yaml
+# behave_data.yml
+data_sources:
+  users_from_api: "http:https://api.example.com/users"
+  users_query: "sql:SELECT name, email FROM users"
+  users_csv: "csv:features/data/users.csv"
+```
+
+```gherkin
+@load_examples:users_from_api
+Scenario Outline: Create user
+  ...
+```
 
 ## CSV file
 
@@ -45,7 +68,7 @@ Result: the scenario runs 3 times, once per row, with `<name>` and `<email>` rep
 Feature:
 
 ```gherkin
-@load_examples:json:features/data/users.json
+@load_examples:json:users.json
 Scenario Outline: Create user
   Given I have a user with name "<name>" and email "<email>"
 
@@ -67,7 +90,7 @@ Scenario Outline: Create user
 Feature:
 
 ```gherkin
-@load_examples:yaml:features/data/users.yaml
+@load_examples:yaml:users.yaml
 Scenario Outline: Create user
 
   Examples:
@@ -79,7 +102,7 @@ Requires `pip install behave-data[yaml]`.
 ## Excel file
 
 ```gherkin
-@load_examples:excel:features/data/users.xlsx
+@load_examples:excel:users.xlsx
 Scenario Outline: Create user
 
   Examples:
@@ -90,8 +113,15 @@ Requires `pip install behave-data[excel]`.
 
 ## SQL query
 
+SQL queries contain spaces and can't appear in a tag — use `data_sources`:
+
+```yaml
+data_sources:
+  all_users: "sql:SELECT name, email FROM users"
+```
+
 ```gherkin
-@load_examples:sql:SELECT name, email FROM users
+@load_examples:all_users
 Scenario Outline: Create user
 
   Examples:
@@ -102,8 +132,15 @@ Requires `pip install behave-data[sql]` and a configured connection.
 
 ## HTTP endpoint
 
+URLs contain `/`, so they also go through `data_sources`:
+
+```yaml
+data_sources:
+  users_api: "http:https://api.example.com/users"
+```
+
 ```gherkin
-@load_examples:http:https://api.example.com/users
+@load_examples:users_api
 Scenario Outline: Create user
 
   Examples:
@@ -111,6 +148,24 @@ Scenario Outline: Create user
 ```
 
 Requires `pip install behave-data[http]`.
+
+## Per-Examples-block tags
+
+A Scenario Outline can have several `Examples` blocks. A tag on a block
+applies only to that block and overrides the scenario-level tag:
+
+```gherkin
+Scenario Outline: Create user
+  Given I have a user with name "<name>" and email "<email>"
+
+  @load_examples:csv:admins.csv
+  Examples: admins
+    | placeholder | placeholder |
+
+  @load_examples:csv:users.csv
+  Examples: regular users
+    | placeholder | placeholder |
+```
 
 ## Configuration
 

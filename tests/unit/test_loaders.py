@@ -604,3 +604,21 @@ class TestLoadFunction:
         assert _detect_schema("ftps://files.example.com/data.json") is None
         assert _detect_schema("sftp://files.example.com/data.yaml") is None
         assert _detect_schema("file:///C:/data/users.xlsx") is None
+
+
+class TestDataSourcesResolution:
+    def test_load_resolves_data_source_name(self, tmp_path: Path) -> None:
+        """Regression: load(<name>) resolves through config.data_sources."""
+        csv_file = tmp_path / "nested" / "users.csv"
+        csv_file.parent.mkdir()
+        csv_file.write_text("name\nAlice\n", encoding="utf-8")
+        cfg = Config.from_dict({"data_sources": {"users": f"csv:{csv_file}"}})
+        result = load("users", cfg)
+        assert result == [{"name": "Alice"}]
+
+    def test_load_unknown_name_unchanged(self, tmp_path: Path) -> None:
+        csv_file = tmp_path / "users.csv"
+        csv_file.write_text("name\nAlice\n", encoding="utf-8")
+        cfg = Config.from_dict({"data_sources": {"other": "csv:x.csv"}})
+        result = load(f"csv:{csv_file}", cfg)
+        assert result == [{"name": "Alice"}]

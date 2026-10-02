@@ -28,9 +28,10 @@ class FakeTable:
 
 
 class FakeExamples:
-    def __init__(self, table: FakeTable, line: int = 0) -> None:
+    def __init__(self, table: FakeTable, line: int = 0, tags: list[str] | None = None) -> None:
         self.table = table
         self.line = line
+        self.tags = tags or []
 
 
 class FakeScenario:
@@ -157,3 +158,51 @@ class TestLoadExamplesForFeature:
         )
         feature = FakeFeature(scenarios=[scenario])
         load_examples_for_feature(feature, Config())
+
+    def test_tag_without_at_prefix(self, tmp_path: Any) -> None:
+        """Regression: real behave tags arrive without the '@' prefix."""
+        csv_file = tmp_path / "users.csv"
+        csv_file.write_text("name\nAlice\n", encoding="utf-8")
+
+        table = FakeTable(["old"], [FakeRow(["old"])])
+        example = FakeExamples(table)
+        scenario = FakeScenario(
+            tags=[f"load_examples:csv:{csv_file}"],
+            examples=[example],
+        )
+        load_examples_for_feature(FakeFeature(scenarios=[scenario]), Config())
+        assert example.table.headings == ["name"]
+        assert len(example.table.rows) == 1
+
+    def test_data_sources_name_resolution(self, tmp_path: Any) -> None:
+        """A tag value matching config.data_sources resolves to the mapped source."""
+        csv_file = tmp_path / "deep" / "users.csv"
+        csv_file.parent.mkdir()
+        csv_file.write_text("name\nAlice\n", encoding="utf-8")
+
+        table = FakeTable(["old"], [FakeRow(["old"])])
+        example = FakeExamples(table)
+        scenario = FakeScenario(tags=["load_examples:my_users"], examples=[example])
+        config = Config.from_dict({"data_sources": {"my_users": f"csv:{csv_file}"}})
+        load_examples_for_feature(FakeFeature(scenarios=[scenario]), config)
+        assert example.table.headings == ["name"]
+        assert len(example.table.rows) == 1
+
+    def test_examples_block_tag_overrides_scenario(self, tmp_path: Any) -> None:
+        """An @load_examples tag on an Examples block wins over the scenario tag."""
+        file_a = tmp_path / "a.csv"
+        file_a.write_text("name\nAlice\n", encoding="utf-8")
+        file_b = tmp_path / "b.csv"
+        file_b.write_text("name\nBob\n", encoding="utf-8")
+
+        table_a = FakeTable(["old"], [FakeRow(["old"])])
+        table_b = FakeTable(["old"], [FakeRow(["old"])])
+        example_a = FakeExamples(table_a)
+        example_b = FakeExamples(table_b, tags=[f"load_examples:csv:{file_b}"])
+        scenario = FakeScenario(
+            tags=[f"load_examples:csv:{file_a}"],
+            examples=[example_a, example_b],
+        )
+        load_examples_for_feature(FakeFeature(scenarios=[scenario]), Config())
+        assert example_a.table.rows[0].cells == ["Alice"]
+        assert example_b.table.rows[0].cells == ["Bob"]
