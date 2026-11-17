@@ -27,7 +27,15 @@ class RawTable:
 
         Args:
             table: A table-like object with ``headings`` and ``rows``.
+
+        Raises:
+            TypeError: If ``table`` lacks ``headings`` or ``rows``.
         """
+        if not hasattr(table, "headings") or not hasattr(table, "rows"):
+            raise TypeError(
+                "table must be a table-like object with 'headings' and 'rows', "
+                f"got {type(table).__name__}"
+            )
         headings = list(table.headings)
         rows: list[list[str]] = [headings]
         heading_count = len(headings)

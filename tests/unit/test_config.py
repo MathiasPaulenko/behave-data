@@ -427,8 +427,13 @@ class TestFromDictEdgeCases:
 
     def test_from_userdata_non_string_scalar_coerced(self) -> None:
         """Regression: non-string values in userdata should be coerced, not crash."""
-        cfg = Config.from_userdata({"behave_data.secret_backend": 123})  # type: ignore[dict-item]
-        assert cfg.secret_backend == "123"
+        cfg = Config.from_userdata({"behave_data.secret_path": 123})  # type: ignore[dict-item]
+        assert cfg.secret_path == "123"
+
+    def test_from_userdata_invalid_secret_backend_rejected(self) -> None:
+        """Regression: an unrecognized backend must fail fast, not at secret use."""
+        with pytest.raises(ValueError, match="secret_backend"):
+            Config.from_userdata({"behave_data.secret_backend": 123})  # type: ignore[dict-item]
 
     def test_from_userdata_non_string_null_markers_coerced(self) -> None:
         cfg = Config.from_userdata({"behave_data.null_markers": ",null,None"})  # type: ignore[dict-item]

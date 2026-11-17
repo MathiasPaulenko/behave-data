@@ -62,6 +62,8 @@ def resolve_placeholder(
     """
     if not isinstance(value, str):
         raise TypeError(f"resolve_placeholder expects a string, got {type(value).__name__}")
+    if config is not None and not isinstance(config, Config):
+        raise TypeError(f"config must be a Config instance or None, got {type(config).__name__}")
 
     cfg = config if config is not None else Config()
 
@@ -77,7 +79,7 @@ def resolve_placeholder(
             raise ValueError("File path cannot be empty in 'file:' placeholder")
         full_path = Path(cfg.secret_path) / file_path
         _validate_path_within_base(full_path, Path(cfg.secret_path))
-        if not full_path.exists():
+        if not full_path.is_file():
             raise FileNotFoundError(f"Secret file not found: {full_path}")
         return full_path.read_text(encoding="utf-8").strip()
 
@@ -123,7 +125,7 @@ def _resolve_secret(name: str, config: Config) -> str | None:
     if backend == "file":
         full_path = Path(config.secret_path) / name
         _validate_path_within_base(full_path, Path(config.secret_path))
-        if not full_path.exists():
+        if not full_path.is_file():
             raise FileNotFoundError(f"Secret file not found: {full_path}")
         return full_path.read_text(encoding="utf-8").strip()
 

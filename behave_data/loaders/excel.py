@@ -47,7 +47,11 @@ class ExcelLoader:
         if not rows:
             return []
 
-        headers = [str(h) if h is not None else "" for h in rows[0]]
+        # Empty headers collapse into a single key — name them col_<i>
+        # like out-of-range columns so no cell is silently lost.
+        headers = [
+            str(h) if h is not None and str(h) != "" else f"col_{i}" for i, h in enumerate(rows[0])
+        ]
         header_count = len(headers)
         result: list[dict[str, Any]] = []
         for row in rows[1:]:

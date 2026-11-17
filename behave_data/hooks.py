@@ -12,8 +12,7 @@ from behave_data.config import Config
 from behave_data.manager import DataManager
 from behave_data.patch import apply_patches
 
-logger = logging.getLogger("behave_data")
-logger.addHandler(logging.NullHandler())
+logger = logging.getLogger(__name__)
 
 _PLACEHOLDER_PATTERN = re.compile(r"\{([^}]+)\}")
 

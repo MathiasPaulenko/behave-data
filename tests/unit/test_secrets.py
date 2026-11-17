@@ -140,9 +140,9 @@ class TestSecretBackend:
             resolve_placeholder("secret:", config)
 
     def test_secret_unknown_backend(self) -> None:
-        config = Config(secret_backend="invalid")
-        with pytest.raises(ValueError, match="Unknown secret backend"):
-            resolve_placeholder("secret:foo", config)
+        # Invalid backends are rejected at Config construction (fail-fast).
+        with pytest.raises(ValueError, match="secret_backend"):
+            Config(secret_backend="invalid")
 
     def test_secret_vault_not_installed(self) -> None:
         import sys

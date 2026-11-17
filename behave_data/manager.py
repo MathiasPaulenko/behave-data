@@ -89,7 +89,8 @@ class DataManager:
         if value is None:
             return None
         if isinstance(value, str):
-            for secret in self._secret_values:
+            # Longest first so overlapping secrets are never partially masked.
+            for secret in sorted(self._secret_values, key=len, reverse=True):
                 if secret and secret in value:
                     value = value.replace(secret, "***")
         return value

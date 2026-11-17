@@ -78,7 +78,17 @@ def register_type(name: str, converter: ConverterFn) -> None:
     Args:
         name: The type name to register (e.g. ``"decimal"``).
         converter: A function that takes a string and returns the converted value.
+
+    Raises:
+        TypeError: If ``name`` is not a string or ``converter`` is not callable.
+        ValueError: If ``name`` is empty.
     """
+    if not isinstance(name, str):
+        raise TypeError(f"Type name must be a string, got {type(name).__name__}")
+    if not name:
+        raise ValueError("Type name cannot be empty")
+    if not callable(converter):
+        raise TypeError(f"converter must be callable, got {type(converter).__name__}")
     TYPE_CONVERTERS[name] = converter
 
 
@@ -143,10 +153,13 @@ def convert_cell(
         The converted value, or the original value if converter is None.
 
     Raises:
+        TypeError: If ``converter`` is not callable.
         TypeConversionError: If the conversion fails.
     """
     if converter is None:
         return value
+    if not callable(converter):
+        raise TypeError(f"converter must be callable, got {type(converter).__name__}")
     try:
         return converter(value)
     except Exception as exc:

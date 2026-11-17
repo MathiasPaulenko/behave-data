@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from behave_data.errors import BehaveDataError, OptionalDependencyError
 
-logger = logging.getLogger("behave_data")
-logger.addHandler(logging.NullHandler())
+logger = logging.getLogger(__name__)
 
 DEFAULT_NULL_MARKERS: frozenset[str] = frozenset({"", "null", "None", "N/A"})
 
@@ -27,6 +27,8 @@ _KNOWN_KEYS = frozenset(
         "data_sources",
     }
 )
+
+_VALID_SECRET_BACKENDS = frozenset({"file", "env", "vault", "aws"})
 
 
 def _stringify_marker(m: object) -> str:
@@ -81,6 +83,10 @@ class Config:
                 f"got {type(self.null_markers_by_column).__name__}"
             )
         for key, markers in self.null_markers_by_column.items():
+            if not isinstance(key, str):
+                raise TypeError(
+                    f"null_markers_by_column keys must be strings, got {type(key).__name__}"
+                )
             if not isinstance(markers, frozenset):
                 raise TypeError(
                     f"null_markers_by_column[{key!r}] must be a frozenset, "
@@ -97,6 +103,11 @@ class Config:
             raise TypeError(
                 f"secret_backend must be a str, got {type(self.secret_backend).__name__}"
             )
+        if self.secret_backend not in _VALID_SECRET_BACKENDS:
+            raise ValueError(
+                f"secret_backend must be one of {sorted(_VALID_SECRET_BACKENDS)}, "
+                f"got {self.secret_backend!r}"
+            )
         if not isinstance(self.secret_path, str):
             raise TypeError(f"secret_path must be a str, got {type(self.secret_path).__name__}")
         if not isinstance(self.load_base_dir, str):
@@ -107,6 +118,8 @@ class Config:
                 f"type_overrides must be a dict, got {type(self.type_overrides).__name__}"
             )
         for key, override in self.type_overrides.items():
+            if not isinstance(key, str):
+                raise TypeError(f"type_overrides keys must be strings, got {type(key).__name__}")
             if not isinstance(override, str):
                 raise TypeError(
                     f"type_overrides[{key!r}] must be a string, got {type(override).__name__}"
@@ -117,6 +130,8 @@ class Config:
                 f"db_connections must be a dict, got {type(self.db_connections).__name__}"
             )
         for key, connection in self.db_connections.items():
+            if not isinstance(key, str):
+                raise TypeError(f"db_connections keys must be strings, got {type(key).__name__}")
             if not isinstance(connection, str):
                 raise TypeError(
                     f"db_connections[{key!r}] must be a string, got {type(connection).__name__}"
@@ -125,6 +140,8 @@ class Config:
         if not isinstance(self.data_sources, dict):
             raise TypeError(f"data_sources must be a dict, got {type(self.data_sources).__name__}")
         for key, source in self.data_sources.items():
+            if not isinstance(key, str):
+                raise TypeError(f"data_sources keys must be strings, got {type(key).__name__}")
             if not isinstance(source, str):
                 raise TypeError(
                     f"data_sources[{key!r}] must be a string, got {type(source).__name__}"
@@ -151,7 +168,12 @@ class Config:
         Returns:
             A Config instance with values from data, defaults for missing keys.
         """
-        unknown = sorted(set(data) - _KNOWN_KEYS)
+        if not isinstance(data, Mapping):
+            raise TypeError(f"Config.from_dict() expects a mapping, got {type(data).__name__}")
+        for k in data:
+            if not isinstance(k, str):
+                raise TypeError(f"Config keys must be strings, got {type(k).__name__}")
+        unknown = sorted(k for k in data if k not in _KNOWN_KEYS)
         if unknown:
             logger.warning("Ignoring unknown config keys: %s", ", ".join(unknown))
         filtered = {k: v for k, v in data.items() if k in _KNOWN_KEYS}
@@ -217,6 +239,8 @@ class Config:
         p = Path(path)
         if not p.exists():
             return cls()
+        if not p.is_file():
+            raise BehaveDataError(f"Config path '{path}' is not a file")
 
         suffix = p.suffix.lower()
 
@@ -280,7 +304,14 @@ class Config:
 
         Returns:
             A Config instance with values from userdata, defaults for missing keys.
+
+        Raises:
+            TypeError: If ``userdata`` is not a mapping.
         """
+        if not isinstance(userdata, Mapping):
+            raise TypeError(
+                f"Config.from_userdata() expects a mapping, got {type(userdata).__name__}"
+            )
         prefix = "behave_data."
         filtered = {k[len(prefix) :]: v for k, v in userdata.items() if k.startswith(prefix)}
 

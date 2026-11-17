@@ -15,7 +15,12 @@ def get_column_markers(column_name: str, config: Config) -> frozenset[str] | Non
     Returns:
         A frozenset of null markers for the column, or None if no
         per-column markers are defined.
+
+    Raises:
+        TypeError: If ``config`` is not a Config instance.
     """
+    if not isinstance(config, Config):
+        raise TypeError(f"config must be a Config, got {type(config).__name__}")
     return config.null_markers_by_column.get(column_name)
 
 

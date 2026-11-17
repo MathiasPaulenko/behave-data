@@ -27,13 +27,20 @@ class TypedTableWrapper(TableWrapper):  # type: ignore[misc]
                 Can also be an existing ``TableWrapper``/``TypedTableWrapper``.
             config: Configuration for null markers and type overrides.
         """
+        if config is not None and not isinstance(config, Config):
+            raise TypeError(f"config must be a Config, got {type(config).__name__}")
         if isinstance(table, TableWrapper):
             # Re-wrap an existing wrapper without re-extracting rows.
             self._table = table._table
             self._rows = [dict(r) for r in table._rows]
         else:
+            if not hasattr(table, "headings") or not hasattr(table, "rows"):
+                raise TypeError(
+                    "table must be a table-like object with 'headings' and 'rows', "
+                    f"got {type(table).__name__}"
+                )
             super().__init__(table)
-        self._config = config or Config()
+        self._config = config if config is not None else Config()
 
     @property
     def headings(self) -> list[str]:
@@ -112,7 +119,9 @@ class TypedTableWrapper(TableWrapper):  # type: ignore[misc]
         Returns:
             A list of dicts with typed values.
         """
-        cfg = config or self._config
+        if config is not None and not isinstance(config, Config):
+            raise TypeError(f"config must be a Config, got {type(config).__name__}")
+        cfg = config if config is not None else self._config
         result: list[dict[str, Any]] = []
 
         columns: list[tuple[str, str, Any, bool, str, frozenset[str] | None]] = []
@@ -120,6 +129,14 @@ class TypedTableWrapper(TableWrapper):  # type: ignore[misc]
             clean_name, converter, nullable, type_name = self._resolve_column_type(header, cfg)
             col_markers = get_column_markers(clean_name, cfg)
             columns.append((header, clean_name, converter, nullable, type_name, col_markers))
+
+        clean_names = [c[1] for c in columns]
+        duplicates = sorted({n for n in clean_names if clean_names.count(n) > 1})
+        if duplicates:
+            raise ValueError(
+                f"Duplicate column name(s) after type-annotation removal: {duplicates}. "
+                "Rename the columns so each clean name is unique."
+            )
 
         for row in self._rows:
             typed_row: dict[str, Any] = {}

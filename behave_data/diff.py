@@ -27,7 +27,8 @@ def diff(
             or a single ``dict`` (wrapped in a list). ``list[list]`` raises
             ``ValueError`` because headers are needed.
         ordered: If True, rows must be in the same order.
-        ignore_columns: Column names to exclude from comparison.
+        ignore_columns: Column names to exclude from comparison. A single
+            string is treated as one column name.
         surplus_columns: If False, extra columns in actual are removed before
             comparison (they don't cause a diff).
 
@@ -36,7 +37,18 @@ def diff(
         TypeError: If a side is not a table-like object, list, or dict.
         TableDiffError: If the tables differ, with a Cucumber-style diff output.
     """
-    ignore_set = set(ignore_columns) if ignore_columns else set()
+    if ignore_columns is None:
+        ignore_set: set[str] = set()
+    elif isinstance(ignore_columns, str):
+        ignore_set = {ignore_columns}
+    else:
+        try:
+            ignore_set = set(ignore_columns)
+        except TypeError:
+            raise TypeError(
+                "ignore_columns must be an iterable of column names, "
+                f"got {type(ignore_columns).__name__}"
+            ) from None
 
     exp_headers, exp_rows = _normalize_table(expected, "expected")
     exp_headers = [h for h in exp_headers if h not in ignore_set]
@@ -131,6 +143,11 @@ def _normalize_table(
 
     if isinstance(value, list) and len(value) == 0:
         return [], []
+
+    if isinstance(value, TableWrapper):
+        # behave_tables wrapper (and TypedTableWrapper): use its own API —
+        # ``rows`` is not part of its public surface.
+        return list(value.headers), value.as_dicts()
 
     if not hasattr(value, "headings") or not hasattr(value, "rows"):
         raise TypeError(

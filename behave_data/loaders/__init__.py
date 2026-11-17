@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
@@ -115,16 +116,26 @@ def load(source: str, config: Config | None = None) -> list[dict[str, Any]]:
     ``/`` and whitespace).
 
     Args:
-        source: Source string with optional schema prefix, or a key in
-            ``config.data_sources``.
+        source: Source string with optional schema prefix, a path-like
+            object, or a key in ``config.data_sources``.
         config: Configuration with load_base_dir and connection settings.
 
     Returns:
         List of dicts representing loaded data.
 
     Raises:
+        TypeError: If ``source`` is not a string or path-like, or ``config``
+            is not a Config.
         LoaderNotFoundError: If no loader matches the source.
     """
+    if isinstance(source, os.PathLike):
+        source = os.fspath(source)
+    if not isinstance(source, str):
+        raise TypeError(
+            f"load() source must be a string or path-like object, got {type(source).__name__}"
+        )
+    if config is not None and not isinstance(config, Config):
+        raise TypeError(f"config must be a Config, got {type(config).__name__}")
     cfg = config if config is not None else Config()
 
     source = cfg.data_sources.get(source, source)
@@ -149,5 +160,7 @@ def load(source: str, config: Config | None = None) -> list[dict[str, Any]]:
 
     if schema not in ("sql", "http", "https"):
         path = _resolve_path(path, cfg)
+        if Path(path).is_dir():
+            raise FileNotFoundError(f"Data source is a directory, not a file: {path}")
 
     return loader.load(path, cfg)

@@ -235,15 +235,15 @@ class TestCleanupNonCallable:
 
 
 class TestParametrizedFixtureAttrName:
-    def test_needs_data_parametrized_sets_base_attr(self) -> None:
-        """@needs_data:user:alice sets context.user (colon names aren't dot-accessible)."""
+    def test_needs_data_parametrized_sets_param_attr(self) -> None:
+        """@needs_data:user:alice sets context.user_alice (matches docs/fixtures.md)."""
         ctx = MagicMock()
         ctx.data.fixture.return_value = {"name": "Alice"}
         ctx._behave_data_loaded = {}
         scenario = FakeScenario(tags=["@needs_data:user:alice"])
         process_tags_before_scenario(ctx, scenario)
         ctx.data.fixture.assert_called_once_with("user:alice")
-        assert ctx.user == {"name": "Alice"}
+        assert ctx.user_alice == {"name": "Alice"}
         assert ctx._behave_data_loaded["user:alice"] == {"name": "Alice"}
 
     def test_needs_data_reserved_name_not_setattr(self) -> None:
