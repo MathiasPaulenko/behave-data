@@ -47,8 +47,8 @@ jobs:
           TAG="${GITHUB_REF#refs/tags/}"
           VERSION="${TAG#v}"
           BODY=$(awk -v ver="## [$VERSION]" '
-            $0 ~ ver {found=1; next}
-            /^## \[/ && found {exit}
+            index($0, ver) == 1 {found=1; next}
+            index($0, "## [") == 1 && found {exit}
             found {print}
           ' CHANGELOG.md)
           echo "body<<EOF" >> "$GITHUB_OUTPUT"
