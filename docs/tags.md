@@ -89,16 +89,18 @@ def step_temp_exists(context):
 
 `after_scenario_hook` runs every function in `context._behave_data_cleanup_funcs`, even if the scenario fails. Functions can take `context` or no arguments.
 
-## Feature-level tags
+## Feature-level and Rule-level tags
 
-Tags at feature level are also processed:
+Tags at feature level are also processed, and so are tags on a `Rule`
+(they apply to all scenarios inside that rule):
 
 ```gherkin
 @needs_data:config
 Feature: All scenarios need config
 
-  Scenario: One
-  Scenario: Two
+  Rule: Admin area
+    @needs_data:admin
+    Scenario: Admin can access
 ```
 
 ## Combination

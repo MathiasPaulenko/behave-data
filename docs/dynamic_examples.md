@@ -152,7 +152,8 @@ Requires `pip install behave-data[http]`.
 ## Per-Examples-block tags
 
 A Scenario Outline can have several `Examples` blocks. A tag on a block
-applies only to that block and overrides the scenario-level tag:
+applies only to that block and overrides the scenario-level tag. A block
+tag also works when the scenario itself is untagged:
 
 ```gherkin
 Scenario Outline: Create user
