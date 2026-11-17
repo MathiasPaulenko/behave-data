@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-11-17
+
+### Fixed
+
+- **Dynamic Examples never ran inside `Rule` blocks**: `feature.scenarios` is empty when scenarios live under a Rule — `load_examples_for_feature` now iterates `rule.scenarios` too, and `@load_examples:`/`@needs_data:`/`@with_fixture:` tags on a Rule are found through the scenario's parent chain.
+- **Dynamic Examples could leave stale scenario instances**: replaced `Examples` tables are now flagged `modified` so Behave rebuilds outline scenarios instead of running the pre-load rows. Loaded headers are also the union of all row keys (a key appearing only in a later row is no longer dropped) and row line numbers increment from the table line.
+- An `Examples`-block-level `@load_examples:` tag could be shadowed by the feature-level tag; block tags now only consult the block's own tags.
+- `typed_dicts()` silently collapsed columns whose clean names collided (e.g. `x:int` + `x:float`); duplicates now raise `ValueError`.
+- `diff()` rejected plain `TableWrapper` objects (e.g. the result of `wrap()`); it now reads `headers`/`as_dicts()`. `ignore_columns` passed as a bare string is treated as one column name instead of being split into characters.
+- `load()` crashed with `AttributeError` on `pathlib.Path` sources; path-like objects are accepted and non-string/non-path sources raise `TypeError`.
+- `Config.from_dict()` raised `AttributeError` on non-mapping input and silently accepted non-string keys; it now validates both. `Config` also rejects non-string keys in `null_markers_by_column`/`type_overrides`/`db_connections`/`data_sources` and unknown `secret_backend` values at construction (fail-fast instead of failing at first `secret:` use).
+- `Config.from_file()` on a directory raised `IsADirectoryError`; it now raises `BehaveDataError`.
+- Fixture `ref:` references were only resolved at the top level of a fixture dict; nested dicts and lists are now traversed. Self-referencing data structures raise `BehaveDataError` instead of recursing forever.
+- `DataManager.mask()` could partially mask overlapping secrets nondeterministically; secrets are now replaced longest-first.
+- `data_fixture(params="ab")` silently registered `a` and `b` as params; strings/bytes and non-iterables are rejected. Registry `register()`/decorators validate names and callables; `get()`/`build()` validate `overrides`/`includes` are mappings.
+- Registry `_lookup()` used `or`, so a falsy instance entry fell through to the global registry instead of shadowing it.
+- `@needs_data:`/`@with_fixture:` for `user:alice` set `context.user` (and parametrized variants collided); the attribute is now `context.user_alice`, matching the documented behavior. Underscore-prefixed fixture names can no longer clobber `context._behave_data_*` internals or dunders.
+- `file:`/`secret:` placeholders pointing at a directory raised `IsADirectoryError`; they raise `FileNotFoundError` like any missing file.
+- `register_type()`/`convert_cell()` accepted non-callable converters and non-string names.
+- Excel columns with empty/`None` headers collapsed into a single `""` key; they are named `col_<i>` like out-of-range columns.
+- Module loggers re-added `NullHandler` on every import; they now use `getLogger(__name__)` and inherit the package handler.
+- Tag processing iterated an unbounded `scenario.parent` chain (infinite loop on objects that fabricate parents); the walk is now bounded and `None` tag lists are tolerated.
+- An `@load_examples:` tag on an `Examples:` block alone (no scenario/feature tag) was ignored entirely; block-level sources now load even without a scenario-level tag.
+- `Config.from_userdata()` raised `AttributeError` on non-mapping input; it now raises `TypeError` like `from_dict()`.
+- `data_fixture()`/`FixtureRegistry.register()` accepted non-string `scope` values; they now raise `TypeError`.
+- `load()` on a directory raised `IsADirectoryError`; it now raises `FileNotFoundError` for consistency with secret paths.
+- `get_column_markers()` raised `AttributeError` on non-Config input; it now raises `TypeError`.
+
 ## [1.1.0] - 2026-10-02
 
 ### Added
